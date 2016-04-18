@@ -33,7 +33,6 @@ void loop()
 {
   currentButton = debounce(lastButton);
 
-  // If the switch/button has been pressed, toggle the ledOn variable
   if (lastButton == LOW && currentButton == HIGH)
   {
     ledLevel = (ledLevel + 51) % 255; // Add 51 units of brightness level, limiting to 255

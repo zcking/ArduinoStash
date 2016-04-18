@@ -8,7 +8,7 @@
 const int switchPin = 8;
 const int ledPin = 13;
 
-bool lastPress = LOW;
+bool lastButton = LOW;
 bool ledOn = false;
 bool currentButton = LOW;
 

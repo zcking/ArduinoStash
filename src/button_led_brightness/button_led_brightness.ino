@@ -5,9 +5,9 @@
  */
 
 const int switchPin = 8;
-const int ledPin = 11;
+const int ledPin = 13;
 
-bool lastPress = LOW;
+bool lastButton = LOW;
 bool currentButton = LOW;
 int ledLevel = 0;
 

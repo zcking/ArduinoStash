@@ -18,7 +18,7 @@ void loop()
   value = constrain(value, 750, 900); // if < 750, value = 750; if > 900, value = 900
   ledLevel = map(value, 750, 900, 255, 0); // map 750 -> 255 and 900 -> 0
   
-  // Serial.println(value); 
+  Serial.println(value); 
   
   analogWrite(ledPin, ledLevel);
 }

@@ -1,10 +1,13 @@
 int ledPin = 13;
-int state = 0;
+int ledPin2 = 4;
+char state = 'a';
 int flag = 0;
 
 void setup() {
   pinMode(ledPin, OUTPUT);
+  pinMode(ledPin2, OUTPUT);
   digitalWrite(ledPin, LOW);
+  digitalWrite(ledPin2, LOW);
   Serial.begin(9600);
 }
 
@@ -20,20 +23,12 @@ void loop() {
   if (state == '0') 
   {
     digitalWrite(ledPin, LOW);
-    if (flag == 0)
-    {
-      Serial.println("LED: off");
-      flag = 1;
-    }
+    digitalWrite(ledPin2, HIGH);
   }
 
   if (state == '1')
   {
     digitalWrite(ledPin, HIGH);
-    if (flag == 0)
-    {
-      Serial.println("LED: on");
-      flag = 1;
-    }
+    digitalWrite(ledPin2, LOW);
   }
 }

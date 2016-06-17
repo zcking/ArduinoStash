@@ -26,9 +26,10 @@ void loop() {
   // put your main code here, to run repeatedly:
   Serial.print("Sending Correct Message...");
   VerifyMessage(&MESSAGE[0], MESSAGE_LEN, &CORRECT_KEY[0], KEY_LEN);
-  Serial.print("\n\nSending Incorrect Message...");
+  Serial.print("Sending Incorrect Message...");
   VerifyMessage(&MESSAGE[0], MESSAGE_LEN, &BAD_KEY[0], KEY_LEN);
-
+  Serial.println("-------------------------------------------------------------");
+  
   delay(10000);
 }
 

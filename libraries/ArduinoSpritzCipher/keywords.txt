@@ -1,0 +1,29 @@
+spritz_ctx	KEYWORD1
+
+spritz_compare	KEYWORD2
+spritz_memzero	KEYWORD2
+spritz_state_memzero	KEYWORD2
+spritz_setup	KEYWORD2
+spritz_setup_withIV	KEYWORD2
+spritz_random8	KEYWORD2
+spritz_random32	KEYWORD2
+spritz_random32_uniform	KEYWORD2
+spritz_add_entropy	KEYWORD2
+spritz_crypt	KEYWORD2
+spritz_hash_setup	KEYWORD2
+spritz_hash_update	KEYWORD2
+spritz_hash_final	KEYWORD2
+spritz_hash	KEYWORD2
+spritz_mac_setup	KEYWORD2
+spritz_mac_update	KEYWORD2
+spritz_mac_final	KEYWORD2
+spritz_mac	KEYWORD2
+
+SPRITZ_N	LITERAL1
+SPRITZ_LIBRARY_VERSION_STRING	LITERAL1
+SPRITZ_LIBRARY_VERSION_MAJOR	LITERAL1
+SPRITZ_LIBRARY_VERSION_MINOR	LITERAL1
+SPRITZ_LIBRARY_VERSION_PATCH	LITERAL1
+SPRITZ_WIPE_TRACES	LITERAL1
+SPRITZ_WIPE_TRACES_PARANOID	LITERAL1
+SPRITZ_TIMING_SAFE_CRUSH	LITERAL1

@@ -31,8 +31,20 @@ void setup()
 
 void loop()
 {
-    // Generate a random CAN message
-    GenerateMessage(id, dlc, &stmp[0]);
+    // Check if user has inputted a message
+    if (Serial.available())
+    {
+        id = Serial.parseInt();
+        dlc = Serial.parseInt();
+        for(int i = 0; i < dlc; i++)
+            stmp[i] = Serial.parseInt();
+    }
+    else
+    {
+        // Otherwise, Generate a random CAN message
+        GenerateMessage(id, dlc, &stmp[0]);
+    }
+    // Display message on Serial interface
     PrintMessage();
    
     // send data:  id = 0x00, standrad frame, data len = 8, stmp: data buf

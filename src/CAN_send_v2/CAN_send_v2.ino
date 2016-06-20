@@ -2,6 +2,7 @@
 // Use http://www.seeedstudio.com/wiki/CAN-BUS_Shield if need help
 #include <mcp_can.h>
 #include <SPI.h>
+#include <SpritzCipher.h>
 #include "can_constants.h"
 
 // the cs pin of the version after v1.1 is default to D9
@@ -11,7 +12,12 @@ const int SPI_CS_PIN = 9;
 // Variables
 uint32_t id = 0x100;
 uint8_t dlc = 8;
-unsigned char stmp[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+uint8_t stmp[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+
+// Hash Buffers
+const uint8_t HASH_LEN = 20; // 160-bit. The other 32 bits for timestamp
+uint8_t correct_hash[HASH_LEN];
+uint8_t hash[HASH_LEN]; // for the incoming hash?
 
 MCP_CAN CAN(SPI_CS_PIN);                                    // Set CS pin
 
@@ -38,18 +44,45 @@ void loop()
         dlc = Serial.parseInt();
         for(int i = 0; i < dlc; i++)
             stmp[i] = Serial.parseInt();
+        CAN.sendMsgBuf(id, 0, dlc, stmp);
     }
     else
     {
         // Otherwise, Generate a random CAN message
         GenerateMessage(id, dlc, &stmp[0]);
+        CAN.sendMsgBuf(id, 0, dlc, stmp);
+        SendAuthMessages(); 
     }
     // Display message on Serial interface
     PrintMessage();
-   
-    // send data:  id = 0x00, standrad frame, data len = 8, stmp: data buf
-    CAN.sendMsgBuf(id, 0, dlc, stmp);
     delay(1000);                       // send data per 100ms
+}
+
+
+// Sends the 3 authentication messages
+void SendAuthMessages()
+{
+    GetCorrectHash(); // fill the correct_hash buffer
+    uint8_t msg1[8];
+    uint8_t msg2[8];
+    uint8_t msg3[4];
+    for (int i = 0; i < 8; i++) msg1[i] = correct_hash[i];
+    for (int i = 8; i < 16; i++) msg2[i - 8] = correct_hash[i];
+    for (int i = 16; i < 20; i++) msg3[i - 16] = correct_hash[i];
+
+    CAN.sendMsgBuf(id, 0, 8, msg1);
+    CAN.sendMsgBuf(id, 0, 8, msg2);
+    CAN.sendMsgBuf(id, 0, 4, msg3);
+}
+
+
+// Takes the data and stores the correct hash in correct_hash
+void GetCorrectHash()
+{
+    uint8_t keyLen;
+    uint8_t key[100];
+    GetKey(id, &key[0], keyLen); // stores length of key in keyLen, and key is filled
+    spritz_mac(&correct_hash[0], HASH_LEN, &stmp[0], dlc, key, keyLen); // create correct hash
 }
 
 

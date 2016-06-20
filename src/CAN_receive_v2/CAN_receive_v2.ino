@@ -90,14 +90,14 @@ void TakeAction()
         if (dlc >= 3)
         {
           redValue = data[0];
-          blueValue = data[1];
-          greenValue = data[2];
+          blueValue = data[2];
+          greenValue = data[1];
         }
         else if (dlc == 2)
         {
           redValue = data[0];
-          blueValue = data[0];
-          greenValue = 0;
+          greenValue = data[1];
+          blueValue = 0;
         }
         else if (dlc == 1)
         {

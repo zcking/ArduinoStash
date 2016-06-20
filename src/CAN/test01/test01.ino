@@ -2,7 +2,7 @@
 #include "mcp_can.h"
 #include <SPI.h>
 
-MCP_CAN CAN0; // Set CS pin to 10; if using Seeed CAN Bus Shield, change to 9
+MCP_CAN CAN0(9); // Set CS pin to 10; if using Seeed CAN Bus Shield, change to 9
 
 unsigned char stmp[8] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37};
 
@@ -10,11 +10,11 @@ unsigned char stmp[8] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37};
 void setup()
 {
   // Set the Serial interface baud rate 
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Initialize the CAN Controller
   // Baud rates are defined in mcp_can_dfs.h
-  if (CAN0.begin(CAN_250KBPS) == CAN_OK)
+  if (CAN0.begin(CAN_500KBPS) == CAN_OK)
     Serial.print("CAN Init OK.\n\r\n\r");
   else
     Serial.print("CAN Init Failed.\n\r");

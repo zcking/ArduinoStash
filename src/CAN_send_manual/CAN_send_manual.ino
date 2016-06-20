@@ -13,8 +13,6 @@ uint32_t id = 0x100;
 uint8_t dlc = 8;
 unsigned char stmp[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
-String message;
-
 MCP_CAN CAN(SPI_CS_PIN);                                    // Set CS pin
 
 void setup()

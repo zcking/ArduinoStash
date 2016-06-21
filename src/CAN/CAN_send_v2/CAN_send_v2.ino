@@ -3,6 +3,8 @@
 #include <mcp_can.h>
 #include <SPI.h>
 #include <SpritzCipher.h>
+#include <Time.h>
+
 #include "can_constants.h"
 
 // the cs pin of the version after v1.1 is default to D9
@@ -18,6 +20,9 @@ uint8_t stmp[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 const uint8_t HASH_LEN = 20; // 160-bit. The other 32 bits for timestamp
 uint8_t correct_hash[HASH_LEN];
 uint8_t hash[HASH_LEN]; // for the incoming hash?
+
+// For timestamping messages
+time_t timestamp;
 
 MCP_CAN CAN(SPI_CS_PIN);                                    // Set CS pin
 
@@ -141,6 +146,28 @@ void SendAuthMessagesByKey(uint8_t *key, uint8_t keyLen)
 }
 
 
+void StampTime(uint8_t *buf)
+{
+    // Get current time
+    timestamp = now();
+
+    Serial.print("Timestamp: ");
+    Serial.print(day(timestamp));
+    Serial.print(" - ");
+    Serial.print(hour(timestamp));
+    Serial.print(":");
+    Serial.print(minute(timestamp));
+    Serial.print(":");
+    Serial.println(second(timestamp));
+
+    // Store the timestamp
+    buf[0] = day(timestamp);
+    buf[1] = hour(timestamp);
+    buf[2] = minute(timestamp);
+    buf[3] = second(timestamp);
+}
+
+
 // Sends the 3 authentication messages
 void SendAuthMessages()
 {
@@ -152,6 +179,9 @@ void SendAuthMessages()
     for (int i = 8; i < 16; i++) msg2[i - 8] = correct_hash[i];
     for (int i = 16; i < 20; i++) msg3[i - 16] = correct_hash[i];
 
+    // Fill last 4 bytes of msg3 with the timestamp
+    StampTime(&msg3[4]);
+
     CAN.sendMsgBuf(id, 0, 8, msg1);
     CAN.sendMsgBuf(id, 0, 8, msg2);
     CAN.sendMsgBuf(id, 0, 8, msg3);
@@ -159,9 +189,10 @@ void SendAuthMessages()
     Serial.print("Sending: ");
     PrintAuthMessage(&msg1[0], 8);
     PrintAuthMessage(&msg2[0], 8);
-    PrintAuthMessage(&msg3[0], 4);
+    PrintAuthMessage(&msg3[0], 8);
     Serial.print('\n');
 }
+
 
 void PrintAuthMessage(uint8_t *msg, uint8_t msgLen)
 {

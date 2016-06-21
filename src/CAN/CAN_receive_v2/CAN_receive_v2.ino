@@ -39,6 +39,9 @@ const int HASH_LEN = 20; // 160-bit hash
 uint8_t correct_hash[HASH_LEN];
 uint8_t incoming_hash[HASH_LEN];
 
+// For data collection - quantity of messages received
+long long int numReceived = 0;
+
 void setup()
 {
     InitMessages();     // Initialize valid CAN messages in can_constants.h
@@ -74,17 +77,18 @@ void loop()
         CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
         Serial.println("\n------------------------------\n");
 
-        // Display the message
-        PrintMessage(); 
+        // Increment counter (invalid messages are still received, so count them too)
+        numReceived++;
 
         // Authenticate the message
         if (Authenticate())
         {
+          // Display the message
+          PrintMessage(); 
+          
           Serial.println("\tAuth Good");
           TakeAction();     // only respond to authorized messages
         }
-        else
-          Serial.println("\tFAILED AUTH");
     }
 }
 
@@ -180,10 +184,12 @@ bool Authenticate()
     uint8_t key[100] = {0}; // buffer for the key
     uint8_t keyLen;
     GetKey(id, &key[0], keyLen);
+
+    Serial.print("Expected Key: ");
     for(int i = 0; i < keyLen; i++)
     {
         Serial.print(key[i]);
-        Serial.print(".");
+        Serial.print(" ");
     }
     Serial.println();
 

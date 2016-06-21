@@ -181,6 +181,12 @@ bool Authenticate()
     uint8_t key[100] = {0}; // buffer for the key
     uint8_t keyLen;
     GetKey(id, &key[0], keyLen);
+    for(int i = 0; i < keyLen; i++)
+    {
+        Serial.print(key[i]);
+        Serial.print(".");
+    }
+    Serial.println();
 
     // Generate the correct hash according to the data
     spritz_mac(&correct_hash[0], HASH_LEN, &data[0], dlc, &key[0], keyLen);
@@ -189,10 +195,6 @@ bool Authenticate()
     CAN.readMsgBuf(&len1, msg1); // msg1
     CAN.readMsgBuf(&len2, msg2); // msg2
     CAN.readMsgBuf(&len3, msg3); // msg3
-    //CAN.readMsgBuf(&len1, msg1); // msg1
-    //CAN.readMsgBuf(&len2, msg2); // msg2
-    //CAN.readMsgBuf(&len3, msg3); // msg3
-    //CAN.readMsgBuf(&len3, msg3); // msg3
 
     // Fill the incoming_hash
     for (int i = 0; i < 8; i++)

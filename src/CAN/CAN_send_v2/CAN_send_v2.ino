@@ -46,10 +46,16 @@ void loop()
       for(int i = 0; i < dlc; i++)
           stmp[i] = Serial.parseInt();
 
-      // Read the key
-      String key = Serial.readString();
+      // Read the key from serial interface
+      uint8_t keyLen = 100;
+      uint8_t key[keyLen];
+      ReadKey(&key[0], keyLen); // store in key buffer, and sets keyLen
+
+      // Send the normal message
       CAN.sendMsgBuf(id, 0, dlc, stmp);
-      SendAuthMessagesByKey(key);
+      
+      // Send the Authentication messages
+      SendAuthMessagesByKey(key, keyLen);
     }
 
     // Otherwise, Generate a random CAN message
@@ -60,19 +66,58 @@ void loop()
     // Display message on Serial interface
     PrintMessage();
     Serial.flush();
-    delay(1000);                       // send data per 100ms
+    delay(1000);
+}
+
+
+void ReadKey(uint8_t *keyBuffer, uint8_t &maxLen)
+{
+    int index = 0;
+    Serial.print("Entered Key: ");
+    while (Serial.available())
+    {
+        keyBuffer[index] = Serial.parseInt();
+        Serial.print(keyBuffer[index]);
+        Serial.print(" ");
+        index++;
+    }
+    if (CompareKey(id, &keyBuffer[0], index))
+        Serial.println("- Correct Key");
+    else
+        Serial.println("- Incorrect Key");
+    maxLen = index;
+}
+
+
+bool CompareKey(int identifier, uint8_t *key, uint8_t keyLen)
+{
+    uint8_t correct_key[100];
+    uint8_t correct_key_len;
+    GetKey(identifier, &correct_key[0], correct_key_len); // get correct key
+
+    if (keyLen != correct_key_len)
+    {
+        Serial.print(" (length off: ");
+        Serial.print(keyLen);
+        Serial.print(" - ");
+        Serial.print(correct_key_len);
+        Serial.print(") ");
+        return false;
+    }
+        
+    for(int i = 0; i < keyLen; i++)
+    {
+        if (key[i] != correct_key[i])
+            return false;
+    }
+    return true;
 }
 
 
 // Sends the 3 authentication messages, 
 // with a hash according to a given key
-void SendAuthMessagesByKey(String string_key)
+void SendAuthMessagesByKey(uint8_t *key, uint8_t keyLen)
 {
-    uint8_t keyLen = 100;
-    uint8_t key[keyLen];
-
-    string_key.getBytes(key, keyLen); // store key as cstring
-    
     // Fill the hash buffer 
     spritz_mac(&hash[0], HASH_LEN, &stmp[0], dlc, key, keyLen); // create correct hash
 
@@ -175,15 +220,6 @@ void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
       data[i] = 0;
     }
     dlc = 8;
-}
-
-
-//---------------------------------------------------------------------------------------
-// Sign the message with appropriate key for this node
-//---------------------------------------------------------------------------------------
-void SignMessage(int &id, int &dlc, unsigned char *data)
-{
-    // TODO
 }
 
 /*********************************************************************************************************

@@ -47,7 +47,7 @@ void loop()
           stmp[i] = Serial.parseInt();
 
       // Read the key
-      string key = Serial.readString();
+      String key = Serial.readString();
       CAN.sendMsgBuf(id, 0, dlc, stmp);
       SendAuthMessagesByKey(key);
     }
@@ -66,9 +66,33 @@ void loop()
 
 // Sends the 3 authentication messages, 
 // with a hash according to a given key
-void SendAuthMessagesByKey(string key)
+void SendAuthMessagesByKey(String string_key)
 {
-  
+    uint8_t keyLen = 100;
+    uint8_t key[keyLen];
+
+    string_key.getBytes(key, keyLen); // store key as cstring
+    
+    // Fill the hash buffer 
+    spritz_mac(&hash[0], HASH_LEN, &stmp[0], dlc, key, keyLen); // create correct hash
+
+    // Create and send the 3 auth messages
+    uint8_t msg1[8];
+    uint8_t msg2[8];
+    uint8_t msg3[8];
+    for (int i = 0; i < 8; i++) msg1[i] = hash[i];
+    for (int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
+    for (int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
+
+    CAN.sendMsgBuf(id, 0, 8, msg1);
+    CAN.sendMsgBuf(id, 0, 8, msg2);
+    CAN.sendMsgBuf(id, 0, 8, msg3);
+
+    Serial.print("Sending: ");
+    PrintAuthMessage(&msg1[0], 8);
+    PrintAuthMessage(&msg2[0], 8);
+    PrintAuthMessage(&msg3[0], 4);
+    Serial.print('\n');
 }
 
 

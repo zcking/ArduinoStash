@@ -180,7 +180,7 @@ void SendAuthMessages()
     for (int i = 16; i < 20; i++) msg3[i - 16] = correct_hash[i];
 
     // Fill last 4 bytes of msg3 with the timestamp
-    StampTime(&msg3[4]);
+    //StampTime(&msg3[4]);
 
     CAN.sendMsgBuf(id, 0, 8, msg1);
     CAN.sendMsgBuf(id, 0, 8, msg2);

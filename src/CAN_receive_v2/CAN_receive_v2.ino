@@ -4,8 +4,8 @@
 // Use http://www.seeedstudio.com/wiki/CAN-BUS_Shield if need help
 
 #include <SPI.h>
+#include <mcp_can.h>
 #include <SpritzCipher.h>
-#include "mcp_can.h"
 #include "can_constants.h"
 
 
@@ -15,8 +15,8 @@ const int SPI_CS_PIN = 9;
 
 MCP_CAN CAN(SPI_CS_PIN);                                    // Set CS pin
 
-uint8_t dlc = 0; // dlc
-uint8_t data[8]; // data buffer
+unsigned char dlc = 0; // dlc
+unsigned char data[8]; // data buffer
 uint32_t id = 0; // CAN ID
 
 
@@ -33,11 +33,9 @@ int blueValue = 0;
 int greenValue = 0;
 
 // For authentication
-const uint8_t HASH_LEN = 20; // 160-bit hash
-uint8_t correct_hash[HASH_LEN]; 
-uint8_t msg1[8];
-uint8_t msg2[8];
-uint8_t msg3[4];
+const int HASH_LEN = 20; // 160-bit hash
+uint8_t correct_hash[HASH_LEN];
+uint8_t incoming_hash[HASH_LEN];
 
 void setup()
 {
@@ -69,84 +67,18 @@ void loop()
 {
     if(CAN_MSGAVAIL == CAN.checkReceive())            // check if data coming
     {
-        // Read the actual message first
         id = CAN.getCanId(); // get CAN ID
-        CAN.readMsgBuf(&dlc, data);    // read data,  len: data length, buf: data buf 
-
-        // Store the correct hash according to the received data
-        GetCorrectHash();
-
-        // Read in the Authentication messages and check if valid
+        CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
+        Serial.println("\n------------------------------\n");
+        PrintMessage();
+      
         if (Authenticate())
-        {
-            // It's valid, so take action
-            PrintMessage();
-            TakeAction();
-        }
+          Serial.println("\tAuth Good");
         else
-        {
-            // Invalid!
-            Serial.println("\n**UNAUTHORIZED MESSAGE**\n");
-        }
+          Serial.println("\tFAILED AUTH");
+        
+        TakeAction();
     }
-}
-
-
-// Reads three CAN messages as authenticator messages
-bool Authenticate()
-{
-    // Fill the 3 msg buffers and check them as they are read in for efficiency
-    CAN.readMsgBuf(&dlc, msg1);
-    //if (!CheckAuthMessage(&msg1[0], 0, 8)) return false;
-    CAN.readMsgBuf(&dlc, msg2);
-    //if (!CheckAuthMessage(&msg2[0], 8, 8)) return false;
-    CAN.readMsgBuf(&dlc, msg3);
-    //if (!CheckAuthMessage(&msg3[0], 16, 4)) return false;
-    for(int i = 0; i < 8; i++)
-    {
-      Serial.print(msg1[i]);
-      Serial.print(".");
-    }
-    for(int i = 0; i < 8; i++)
-    {
-      Serial.print(msg2[i]);
-      Serial.print(".");
-    }
-    for(int i = 0; i < 4; i++)
-    {
-      Serial.print(msg3[i]);
-      Serial.print(".");
-    }
-    Serial.print('\n');
-    for(int i = 0; i < 20; i++)
-    {
-      Serial.print(correct_hash[i]);
-      Serial.print('.');
-    }
-    Serial.println('---------------------');
-    return true;
-}
-
-
-// Stores the correct hash in correcct_hash
-void GetCorrectHash()
-{
-    uint8_t keyLen;
-    uint8_t key[100];
-    GetKey(id, &key[0], keyLen); // get key and key length for this is
-    spritz_mac(&correct_hash[0], HASH_LEN, &data[0], dlc, key, keyLen); // create correct hash
-}
-
-
-// Checks an auth message against correct_hash
-bool CheckAuthMessage(uint8_t *buf, int start, int bufLen)
-{
-    for (int i = 0; i < bufLen; i++)
-    {
-      if (buf[i] != correct_hash[i + start])
-          return false;
-    }
-    return true;
 }
 
 
@@ -206,7 +138,6 @@ void TakeAction()
 //---------------------------------------------------------------------------------------
 void PrintMessage()
 {
-    Serial.println("-----------------------------");
     Serial.println("Received Message:");
     Serial.print("\tID ---> ");
     Serial.println(id, HEX);
@@ -224,6 +155,65 @@ void PrintMessage()
     Serial.println();
 }
 
+
+//---------------------------------------------------------------------------------------
+// Check/Authenticate the message received
+//---------------------------------------------------------------------------------------
+bool Authenticate()
+{
+    // For storing incoming hash data
+    uint8_t msg1[8];
+    uint8_t msg2[8];
+    uint8_t msg3[8];
+    uint8_t len1 = 0;
+    uint8_t len2 = 0;
+    uint8_t len3 = 0;
+    
+    // Get the Correct Key according to the current data
+    uint8_t key[100] = {0}; // buffer for the key
+    uint8_t keyLen;
+    GetKey(id, &key[0], keyLen);
+
+    // Generate the correct hash according to the data
+    spritz_mac(&correct_hash[0], HASH_LEN, &data[0], dlc, &key[0], keyLen);
+    
+    // Read in the three hash messages
+    CAN.readMsgBuf(&len1, msg1); // msg1
+    CAN.readMsgBuf(&len2, msg2); // msg2
+    CAN.readMsgBuf(&len3, msg3); // msg3
+    //CAN.readMsgBuf(&len1, msg1); // msg1
+    //CAN.readMsgBuf(&len2, msg2); // msg2
+    //CAN.readMsgBuf(&len3, msg3); // msg3
+    //CAN.readMsgBuf(&len3, msg3); // msg3
+
+    // Fill the incoming_hash
+    for (int i = 0; i < 8; i++)
+      incoming_hash[i] = msg1[i];
+    for (int i = 0; i < 8; i++)
+      incoming_hash[i + 8] = msg3[i];
+    for (int i = 0; i < 4; i++)
+      incoming_hash[i + 16] = msg2[i];
+
+    // Print the incoming_hash
+    Serial.print("Received Hash: ");
+    for (int i = 0; i < HASH_LEN; i++)
+    {
+        if (incoming_hash[i] < 0x10)
+          Serial.print('0');
+        Serial.print(incoming_hash[i], HEX);
+        Serial.print(' ');
+    }
+    Serial.print("\nExpected Hash: ");
+    for(int i = 0; i < HASH_LEN; i++)
+    {
+      if (correct_hash[i] < 0x10)
+        Serial.print('0');
+      Serial.print(correct_hash[i], HEX);
+      Serial.print(' ');
+    }
+    Serial.println();
+    return (spritz_compare(&correct_hash[0], &incoming_hash[0], HASH_LEN) == 0);
+}
 
 /*********************************************************************************************************
   END FILE

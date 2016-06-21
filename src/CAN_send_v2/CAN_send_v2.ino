@@ -40,21 +40,24 @@ void loop()
     // Check if user has inputted a message
     if (Serial.available())
     {
-        id = Serial.parseInt();
-        dlc = Serial.parseInt();
+      id = Serial.parseInt();
+      dlc = Serial.parseInt();
+      for(int i = 0; i < 4; i++) // 4: 1 normal, 3 auth
+      {
         for(int i = 0; i < dlc; i++)
             stmp[i] = Serial.parseInt();
         CAN.sendMsgBuf(id, 0, dlc, stmp);
+      }
     }
-    else
-    {
-        // Otherwise, Generate a random CAN message
-        GenerateMessage(id, dlc, &stmp[0]);
-        CAN.sendMsgBuf(id, 0, dlc, stmp);
-        SendAuthMessages(); 
-    }
+
+    // Otherwise, Generate a random CAN message
+    GenerateMessage(id, dlc, &stmp[0]);
+    CAN.sendMsgBuf(id, 0, dlc, stmp);
+    SendAuthMessages(); 
+        
     // Display message on Serial interface
     PrintMessage();
+    Serial.flush();
     delay(1000);                       // send data per 100ms
 }
 
@@ -65,14 +68,31 @@ void SendAuthMessages()
     GetCorrectHash(); // fill the correct_hash buffer
     uint8_t msg1[8];
     uint8_t msg2[8];
-    uint8_t msg3[4];
+    uint8_t msg3[8];
     for (int i = 0; i < 8; i++) msg1[i] = correct_hash[i];
     for (int i = 8; i < 16; i++) msg2[i - 8] = correct_hash[i];
     for (int i = 16; i < 20; i++) msg3[i - 16] = correct_hash[i];
 
     CAN.sendMsgBuf(id, 0, 8, msg1);
     CAN.sendMsgBuf(id, 0, 8, msg2);
-    CAN.sendMsgBuf(id, 0, 4, msg3);
+    CAN.sendMsgBuf(id, 0, 8, msg3);
+
+    Serial.print("Sending: ");
+    PrintAuthMessage(&msg1[0], 8);
+    PrintAuthMessage(&msg2[0], 8);
+    PrintAuthMessage(&msg3[0], 4);
+    Serial.print('\n');
+}
+
+void PrintAuthMessage(uint8_t *msg, uint8_t msgLen)
+{
+    for(int i = 0; i < msgLen; i++)
+    {
+        //if (msg[i] < 0x10)
+//            Serial.print("0");
+        Serial.print(msg[i]);
+        Serial.print(" ");
+    }
 }
 
 
@@ -95,9 +115,9 @@ void PrintMessage()
     Serial.print("Data: ");
     for (int i = 0; i < dlc; i++)
     {
-      if (stmp[i] < 0x10)
-          Serial.print("0");
-      Serial.print(stmp[i], HEX);
+//      if (stmp[i] < 0x10)
+//          Serial.print("0");
+      Serial.print(stmp[i]);
       Serial.print(" ");
     }
     Serial.print("\n\r-------------------------------------------\n\r");
@@ -116,6 +136,11 @@ void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
     {
       data[i] = random(0x100); // each byte is random char between 0..0xFF
     }
+    for(int i = dlc; i < 8; i++)
+    {
+      data[i] = 0;
+    }
+    dlc = 8;
 }
 
 

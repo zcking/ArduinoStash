@@ -23,6 +23,8 @@ uint32_t id = 0; // CAN ID
 // "Control Units" -- LED Lights to be controlled
 const int blueLED = 4;
 const int greenLED = 3;
+
+// For the RGB LED
 const int RED = 7;
 const int GREEN = 5;
 const int BLUE = 6;
@@ -39,8 +41,8 @@ uint8_t incoming_hash[HASH_LEN];
 
 void setup()
 {
-    InitMessages();
-    Serial.begin(115200);             // serial interface baud rate (typical rate for CAN Bus)
+    InitMessages();     // Initialize valid CAN messages in can_constants.h
+    Serial.begin(115200);    // serial interface baud rate (typical rate for CAN Bus)
 
     while (CAN_OK != CAN.begin(CAN_500KBPS))              // init can bus : baudrate = 500k
     {
@@ -50,6 +52,7 @@ void setup()
     }
     Serial.println("CAN BUS Shield init ok!");
 
+    // Initialize all the LEDs
     pinMode(blueLED, OUTPUT);
     pinMode(greenLED, OUTPUT);
     pinMode(RED, OUTPUT);
@@ -70,13 +73,18 @@ void loop()
         id = CAN.getCanId(); // get CAN ID
         CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
         Serial.println("\n------------------------------\n");
-        PrintMessage();
-      
+
+        // Display the message
+        PrintMessage(); 
+
+        // Authenticate the message
         if (Authenticate())
           Serial.println("\tAuth Good");
         else
           Serial.println("\tFAILED AUTH");
-        
+
+        // Once Authentication is finished, this will be moved
+        // inside the IF above. Acts based off the data sent
         TakeAction();
     }
 }

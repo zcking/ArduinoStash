@@ -79,13 +79,12 @@ void loop()
 
         // Authenticate the message
         if (Authenticate())
+        {
           Serial.println("\tAuth Good");
+          TakeAction();     // only respond to authorized messages
+        }
         else
           Serial.println("\tFAILED AUTH");
-
-        // Once Authentication is finished, this will be moved
-        // inside the IF above. Acts based off the data sent
-        TakeAction();
     }
 }
 

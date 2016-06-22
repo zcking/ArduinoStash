@@ -16,17 +16,24 @@ maximx = 0
 minimy = 999
 maximy = 0
 
+average = 0
+total = 0
+counter = 0
+
 def plot_data(file_path):
-    global minimx, minimy, maximx, maximy
+    global minimx, minimy, maximx, maximy, average, total, counter
     
     with open(file_path, 'r') as f:
         entries = f.read().splitlines() # read all the lines into a list
         start = float(entries[0].split(':')[0]) # get first second
         end = float(entries[-1].split(':')[0]) # get last second
 
+        counter += (end - start)
         values = []
         for entry in entries:
-            values.append(int(entry.split(':')[1]))
+            values.append(8 * int(entry.split(':')[1]))
+            total += (8 * int(entry.split(':')[1]))
+        average = total / counter
 
         minimx = min(minimx, start)
         maximx = max(maximx, end)
@@ -35,7 +42,7 @@ def plot_data(file_path):
 
         plt.plot(values)
         plt.axis([minimx, maximx, minimy-10, maximy+10])
-        plt.ylabel('Quantity of Received CAN Messages')
+        plt.ylabel('Bytes Received')
         plt.xlabel('Time (s)')
         plt.title('Real-time Operation of \nSimulative Controlled Area Network')
         
@@ -47,4 +54,7 @@ if __name__ == '__main__':
     else:
         for i in range(1, len(sys.argv)):
             plot_data(sys.argv[i])
+
+    print(average)
+    plt.plot([average] * 50)
     plt.show()

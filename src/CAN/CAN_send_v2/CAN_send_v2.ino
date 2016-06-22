@@ -78,18 +78,18 @@ void loop()
 void ReadKey(uint8_t *keyBuffer, uint8_t &maxLen)
 {
     int index = 0;
-    //Serial.print("Entered Key: ");
+    Serial.print("Entered Key: ");
     while (Serial.available())
     {
         keyBuffer[index] = Serial.parseInt();
-        //Serial.print(keyBuffer[index]);
-        //Serial.print(" ");
+        Serial.print(keyBuffer[index]);
+        Serial.print(" ");
         index++;
     }
-//    if (CompareKey(id, &keyBuffer[0], index))
-//        Serial.println("- Correct Key");
-//    else
-//        Serial.println("- Incorrect Key");
+    if (CompareKey(id, &keyBuffer[0], index))
+        Serial.println("- Correct Key");
+    else
+        Serial.println("- Incorrect Key");
     maxLen = index;
 }
 
@@ -100,15 +100,15 @@ bool CompareKey(int identifier, uint8_t *key, uint8_t keyLen)
     uint8_t correct_key_len;
     GetKey(identifier, &correct_key[0], correct_key_len); // get correct key
 
-//    if (keyLen != correct_key_len)
-//    {
-//        Serial.print(" (length off: ");
-//        Serial.print(keyLen);
-//        Serial.print(" - ");
-//        Serial.print(correct_key_len);
-//        Serial.print(") ");
-          return false;
-//    }
+    if (keyLen != correct_key_len)
+    {
+        Serial.print(" (length off: ");
+        Serial.print(keyLen);
+        Serial.print(" - ");
+        Serial.print(correct_key_len);
+        Serial.print(") ");
+        return false;
+    }
         
     for(int i = 0; i < keyLen; i++)
     {
@@ -141,11 +141,11 @@ void SendAuthMessagesByKey(uint8_t *key, uint8_t keyLen)
     CAN.sendMsgBuf(id, 0, 8, msg2);
     CAN.sendMsgBuf(id, 0, 8, msg3);
 
-//    Serial.print("Sending: ");
-//    PrintAuthMessage(&msg1[0], 8);
-//    PrintAuthMessage(&msg2[0], 8);
-//    PrintAuthMessage(&msg3[0], 4);
-//    Serial.print('\n');
+    Serial.print("Sending: ");
+    PrintAuthMessage(&msg1[0], 8);
+    PrintAuthMessage(&msg2[0], 8);
+    PrintAuthMessage(&msg3[0], 4);
+    Serial.print('\n');
 }
 
 
@@ -179,11 +179,11 @@ void SendAuthMessages()
     CAN.sendMsgBuf(id, 0, 8, msg2);
     CAN.sendMsgBuf(id, 0, 8, msg3);
 
-//    Serial.print("Sending: ");
-//    PrintAuthMessage(&msg1[0], 8);
-//    PrintAuthMessage(&msg2[0], 8);
-//    PrintAuthMessage(&msg3[0], 8);
-//    Serial.print('\n');
+    Serial.print("Sending: ");
+    PrintAuthMessage(&msg1[0], 8);
+    PrintAuthMessage(&msg2[0], 8);
+    PrintAuthMessage(&msg3[0], 8);
+    Serial.print('\n');
 }
 
 

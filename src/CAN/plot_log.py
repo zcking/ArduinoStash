@@ -37,7 +37,7 @@ def plot_data(file_path):
         plt.axis([minimx, maximx, minimy-10, maximy+10])
         plt.ylabel('Quantity of Received CAN Messages')
         plt.xlabel('Time (s)')
-        plt.title('Real-time Operation of \nSimulative Controlled Area Network \n(Control Group)')
+        plt.title('Real-time Operation of \nSimulative Controlled Area Network')
         
 
 if __name__ == '__main__':

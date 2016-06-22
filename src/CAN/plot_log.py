@@ -34,7 +34,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print('Usage: python plot_log.py <logfile-path>')
         sys.exit(1)
-    elif len(sys.argv) == 3:
-        plot_data(sys.argv[1])
-        plot_data(sys.argv[2])
+    else:
+        for i in range(1, len(sys.argv)):
+            plot_data(sys.argv[i])
     plt.show()

@@ -36,6 +36,7 @@ int greenValue = 0;
 unsigned long numReceived = 0;
 int timer = 0;
 int oldTime = 0;
+int sec = 0;
 
 void setup()
 {
@@ -75,7 +76,9 @@ void loop()
         if (timer > oldTime)
         {
             oldTime = timer;
-            Serial.print("COUNT: ");
+            sec++; // current second
+            Serial.print(sec);
+            Serial.print(":");
             Serial.println(numReceived);
             numReceived = 0;
         }

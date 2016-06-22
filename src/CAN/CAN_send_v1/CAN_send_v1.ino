@@ -24,7 +24,6 @@ void setup()
     {
         Serial.println("CAN BUS Shield init fail");
         Serial.println(" Init CAN BUS Shield again");
-        delay(200);
     }
     Serial.println("CAN BUS Shield init ok!");
 }
@@ -49,7 +48,7 @@ void loop()
    
     // send data:  id = 0x00, standrad frame, data len = 8, stmp: data buf
     CAN.sendMsgBuf(id, 0, dlc, stmp);
-    delay(1000);                       // send data per 100ms
+    delay(1);                       // send data per 100ms
 }
 
 

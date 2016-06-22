@@ -43,7 +43,7 @@ uint8_t incoming_hash[HASH_LEN];
 unsigned long mil_timestamp = 0;
 unsigned long door_timestamp = 0;
 unsigned long engine_timestamp = 0;
-const unsigned long MIN_FREQUENCY = 3000; // how many milliseconds apart a message has to be from its replay
+const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
 
 // For data collection - quantity of messages received
 long long int numReceived = 0;
@@ -92,7 +92,7 @@ void loop()
           // Display the message
           PrintMessage(); 
           
-          Serial.println("\tAuth Good");
+          Serial.println("\nAUTHENTICATION SUCCESSFUL");
           TakeAction();     // only respond to authorized messages
         }
     }
@@ -219,7 +219,8 @@ bool Authenticate()
     // Verify the timestamp/freqency
     if (!VerifyTimestamp(&msg2[4]))
     {
-        Serial.println("Failed Frequency Check");
+        //Serial.println("Failed Frequency Check");
+        return false;
     }
 
     // Print the incoming_hash

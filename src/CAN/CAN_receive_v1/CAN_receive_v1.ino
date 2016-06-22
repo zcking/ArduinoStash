@@ -5,6 +5,7 @@
 
 #include <SPI.h>
 #include <mcp_can.h>
+#include <Time.h>
 #include "can_constants.h"
 
 
@@ -31,7 +32,10 @@ int redValue = 255;
 int blueValue = 0;
 int greenValue = 0;
 
-// For authentication
+// For data collection
+unsigned long numReceived = 0;
+int timer = 0;
+int oldTime = 0;
 
 void setup()
 {
@@ -42,7 +46,6 @@ void setup()
     {
         Serial.println("CAN BUS Shield init fail");
         Serial.println(" Init CAN BUS Shield again");
-        delay(200);
     }
     Serial.println("CAN BUS Shield init ok!");
 
@@ -66,7 +69,18 @@ void loop()
         id = CAN.getCanId(); // get CAN ID
         CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
 
-        PrintMessage();
+        // Increment counter
+        numReceived++;
+        timer = second(now());
+        if (timer > oldTime)
+        {
+            oldTime = timer;
+            Serial.print("COUNT: ");
+            Serial.println(numReceived);
+            numReceived = 0;
+        }
+        
+        //PrintMessage();
         TakeAction();
     }
 }

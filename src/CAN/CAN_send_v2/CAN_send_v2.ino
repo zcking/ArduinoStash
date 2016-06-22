@@ -71,7 +71,7 @@ void loop()
     // Display message on Serial interface
     PrintMessage();
     Serial.flush();
-    delay(1000);
+    delay(10);
 }
 
 

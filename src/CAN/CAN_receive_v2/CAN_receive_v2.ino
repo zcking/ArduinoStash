@@ -39,6 +39,12 @@ const int HASH_LEN = 20; // 160-bit hash
 uint8_t correct_hash[HASH_LEN];
 uint8_t incoming_hash[HASH_LEN];
 
+// For timestamp verification 
+unsigned long mil_timestamp = 0;
+unsigned long door_timestamp = 0;
+unsigned long engine_timestamp = 0;
+const unsigned long MIN_FREQUENCY = 3000; // how many milliseconds apart a message has to be from its replay
+
 // For data collection - quantity of messages received
 long long int numReceived = 0;
 
@@ -80,7 +86,7 @@ void loop()
         // Increment counter (invalid messages are still received, so count them too)
         numReceived++;
 
-        // Authenticate the message
+        // Authenticate the message (both HMAC and Frequency check)
         if (Authenticate())
         {
           // Display the message
@@ -197,17 +203,24 @@ bool Authenticate()
     spritz_mac(&correct_hash[0], HASH_LEN, &data[0], dlc, &key[0], keyLen);
     
     // Read in the three hash messages
-    CAN.readMsgBuf(&len1, msg1); // msg1
-    CAN.readMsgBuf(&len2, msg2); // msg2
-    CAN.readMsgBuf(&len3, msg3); // msg3
+    CAN.readMsgBuf(&len1, msg1); // msg1 (first 8 bytes)
+    CAN.readMsgBuf(&len2, msg2); // msg2 (last 8 bytes [4 for timestamp])
+    CAN.readMsgBuf(&len3, msg3); // msg3 (second 8 bytes - order is weird)
 
-    // Fill the incoming_hash
+    // Fill the incoming_hash 
     for (int i = 0; i < 8; i++)
+    {
       incoming_hash[i] = msg1[i];
-    for (int i = 0; i < 8; i++)
       incoming_hash[i + 8] = msg3[i];
-    for (int i = 0; i < 4; i++)
-      incoming_hash[i + 16] = msg2[i];
+      if (i < 4)
+        incoming_hash[i + 16] = msg2[i];
+    }
+
+    // Verify the timestamp/freqency
+    if (!VerifyTimestamp(&msg2[4]))
+    {
+        Serial.println("Failed Frequency Check");
+    }
 
     // Print the incoming_hash
     Serial.print("Received Hash: ");
@@ -228,6 +241,43 @@ bool Authenticate()
     }
     Serial.println();
     return (spritz_compare(&correct_hash[0], &incoming_hash[0], HASH_LEN) == 0);
+}
+
+
+bool VerifyTimestamp(uint8_t *buf)
+{
+    // Unpack the 4 bytes in buf to store as milliseconds
+    unsigned long ms = buf[0] << 24;
+    ms += buf[1] << 16;
+    ms += buf[2] << 8;
+    ms += buf[3];
+
+    // Get the appropriate stored timestamp to compare against
+    unsigned long *lastStamp;
+    if (id == MIL_ID)
+      lastStamp = &mil_timestamp;
+    else if (id == DOOR_ID)
+      lastStamp = &door_timestamp;
+    else if (id == ENGINE_ID)
+      lastStamp = &engine_timestamp;
+
+    Serial.print("Received Timestamp: ");
+    Serial.println(ms);
+    Serial.print("Last Timestamp: ");
+    Serial.println(*lastStamp);
+
+    if (*lastStamp > ms) // ms must have exceded max value and started over 
+    {
+        *lastStamp = ms;
+        return true;
+    }
+    
+    if ((*lastStamp + MIN_FREQUENCY) <= ms)
+    {
+        *lastStamp = ms;
+        return true;
+    }
+    return false;
 }
 
 /*********************************************************************************************************

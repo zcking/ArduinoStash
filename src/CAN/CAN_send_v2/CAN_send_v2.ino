@@ -43,7 +43,7 @@ void setup()
 void loop()
 {
     // Check if user has inputted a message
-    if (Serial.available())
+    while (Serial.available())
     {
       // Read the message
       id = Serial.parseInt();
@@ -61,17 +61,18 @@ void loop()
       
       // Send the Authentication messages
       SendAuthMessagesByKey(key, keyLen);
+      PrintMessage();
     }
 
     // Otherwise, Generate a random CAN message
     GenerateMessage(id, dlc, &stmp[0]);
-    CAN.sendMsgBuf(id, 0, dlc, stmp);
-    SendAuthMessages(); 
+    //CAN.sendMsgBuf(id, 0, dlc, stmp);
+    //SendAuthMessages(); 
         
     // Display message on Serial interface
-    PrintMessage();
+    //PrintMessage();
     Serial.flush();
-    delay(1000);
+    delay(1);
 }
 
 
@@ -134,6 +135,9 @@ void SendAuthMessagesByKey(uint8_t *key, uint8_t keyLen)
     for (int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
     for (int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
 
+    // Fill msg3 last 4 bytes with timestamp
+    StampTime(&msg3[4]);
+
     CAN.sendMsgBuf(id, 0, 8, msg1);
     CAN.sendMsgBuf(id, 0, 8, msg2);
     CAN.sendMsgBuf(id, 0, 8, msg3);
@@ -148,23 +152,13 @@ void SendAuthMessagesByKey(uint8_t *key, uint8_t keyLen)
 
 void StampTime(uint8_t *buf)
 {
-    // Get current time
-    timestamp = now();
-
-    Serial.print("Timestamp: ");
-    Serial.print(day(timestamp));
-    Serial.print(" - ");
-    Serial.print(hour(timestamp));
-    Serial.print(":");
-    Serial.print(minute(timestamp));
-    Serial.print(":");
-    Serial.println(second(timestamp));
+    unsigned long ms = millis(); 
 
     // Store the timestamp
-    buf[0] = day(timestamp);
-    buf[1] = hour(timestamp);
-    buf[2] = minute(timestamp);
-    buf[3] = second(timestamp);
+    buf[0] = (int)((ms >> 24) & 0xFF);
+    buf[1] = (int)((ms >> 16) & 0xFF);
+    buf[2] = (int)((ms >> 8) & 0xFF);
+    buf[3] = (int)((ms & 0xFF));
 }
 
 
@@ -180,7 +174,7 @@ void SendAuthMessages()
     for (int i = 16; i < 20; i++) msg3[i - 16] = correct_hash[i];
 
     // Fill last 4 bytes of msg3 with the timestamp
-    //StampTime(&msg3[4]);
+    StampTime(&msg3[4]);
 
     CAN.sendMsgBuf(id, 0, 8, msg1);
     CAN.sendMsgBuf(id, 0, 8, msg2);

@@ -61,18 +61,17 @@ void loop()
       
       // Send the Authentication messages
       SendAuthMessagesByKey(key, keyLen);
-      PrintMessage();
     }
 
     // Otherwise, Generate a random CAN message
     GenerateMessage(id, dlc, &stmp[0]);
-    //CAN.sendMsgBuf(id, 0, dlc, stmp);
-    //SendAuthMessages(); 
+    CAN.sendMsgBuf(id, 0, dlc, stmp);
+    SendAuthMessages(); 
         
     // Display message on Serial interface
-    //PrintMessage();
+    PrintMessage();
     Serial.flush();
-    delay(1);
+    delay(1000);
 }
 
 

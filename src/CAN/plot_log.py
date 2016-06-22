@@ -11,8 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
+minimx = 999
+maximx = 0
+minimy = 999
+maximy = 0
 
 def plot_data(file_path):
+    global minimx, minimy, maximx, maximy
     
     with open(file_path, 'r') as f:
         entries = f.read().splitlines() # read all the lines into a list
@@ -23,8 +28,13 @@ def plot_data(file_path):
         for entry in entries:
             values.append(int(entry.split(':')[1]))
 
+        minimx = min(minimx, start)
+        maximx = max(maximx, end)
+        minimy = min(minimy, min(values))
+        maximy = max(maximy, max(values))
+
         plt.plot(values)
-        plt.axis([start, end, min(values)-10, max(values)+10])
+        plt.axis([minimx, maximx, minimy-10, maximy+10])
         plt.ylabel('Quantity of Received CAN Messages')
         plt.xlabel('Time (s)')
         plt.title('Real-time Operation of \nSimulative Controlled Area Network \n(Control Group)')

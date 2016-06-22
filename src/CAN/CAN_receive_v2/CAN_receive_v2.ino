@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include <mcp_can.h>
 #include <SpritzCipher.h>
+#include <Time.h>
 #include "can_constants.h"
 
 
@@ -46,7 +47,10 @@ unsigned long engine_timestamp = 0;
 const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
 
 // For data collection - quantity of messages received
-long long int numReceived = 0;
+unsigned long numReceived = 0;
+int timer = 0;
+int oldTime = 0; 
+int sec = 0;
 
 void setup()
 {
@@ -83,8 +87,18 @@ void loop()
         CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
 //        Serial.println("\n------------------------------\n");
 
-        // Increment counter (invalid messages are still received, so count them too)
+        // Increment counter
         numReceived++;
+        timer = second(now());
+        if (timer > oldTime)
+        {
+            oldTime = timer;
+            sec++; // current second
+            Serial.print(sec);
+            Serial.print(":");
+            Serial.println(numReceived);
+            numReceived = 0;
+        }
 
         // Authenticate the message (both HMAC and Frequency check)
         if (Authenticate())
@@ -193,7 +207,7 @@ bool Authenticate()
 
 //    Serial.print("Expected Key: ");
 //    for(int i = 0; i < keyLen; i++)
-    {
+//    {
 //        Serial.print(key[i]);
 //        Serial.print(" ");
 //    }

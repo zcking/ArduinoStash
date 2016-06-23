@@ -1,15 +1,27 @@
 #include <MD5.h>
+#include <mcp_can.h>
+
+const int SPI_CS_PIN = 9;
+
+MCP_CAN CAN(SPI_CS_PIN);
 
 char *correct_key = "sharedkey";
 
 void setup()
 {
     Serial.begin(115200);
+
+    while (CAN_OK != CAN.begin(CAN_500KBPS))
+    {
+        Serial.println("CAN BUS Shield init fail");
+        Serial.println(" Init CAN BUS Shield again");
+    }
+    Serial.println("CAN BUS Shield init ok!");
 }
 
 void loop()
 {
-    if (Serial.available() >= 3)
+    while (Serial.available() >= 4)
     {
         // Get user message
         uint32_t id = (uint32_t)Serial.parseInt();
@@ -18,14 +30,16 @@ void loop()
         for(int i = 0; i < dlc; i++)
             msg[i] = (uint8_t)Serial.parseInt();
         char *key = (char *)(Serial.readString().c_str());
-        uint8_t msgLen, keyLen;
-        SendAuthMessages(correct_key, keyLen, msg, msgLen);
+        uint8_t msgLen, keyLen, fullMsgLen;
+        uint8_t *fullMessage = GetFullMessage(correct_key, keyLen, msg, msgLen, fullMsgLen);
         Serial.flush();
+
+        CAN.sendMsgBuf(id, 0, dlc, msg);
     }
 }
 
 
-void SendAuthMessages(char *key, uint8_t &keyLen, uint8_t *data, uint8_t &dataLen)
+uint8_t *GetFullMessage(char *key, uint8_t &keyLen, uint8_t *data, uint8_t &dataLen, uint8_t &lenVar)
 {
     // Convert to uint8_t
     uint8_t *theKey = CStringToUInt8(key, keyLen);
@@ -38,15 +52,7 @@ void SendAuthMessages(char *key, uint8_t &keyLen, uint8_t *data, uint8_t &dataLe
     for(int i = 0; i < keyLen; i++)
         fullMessage[i + dataLen] = theKey[i];
 
-    // Print the whole, unhashsed message
-    for(int i = 0; i < (keyLen + dataLen); i++)
-    {
-        if (fullMessage[i] < 0x10)
-            Serial.print('0');
-        Serial.print(fullMessage[i], HEX);
-        Serial.print(' ');
-    }
-    Serial.println();
+    lenVar = keyLen + dataLen;
 }
 
 

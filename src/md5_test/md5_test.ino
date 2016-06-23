@@ -1,33 +1,35 @@
 #include <MD5.h>
 
-
-char *key = "sharedkey";
-int keyLen;
-int32_t id = 0xa0;
-int8_t dlc = 2;
-char *data = "a1f2";
-int dataLen;
+char *correct_key = "sharedkey";
 
 void setup()
 {
     Serial.begin(115200);
-    uint8_t *newKey = CStringToUInt8(key, keyLen);
-    uint8_t *newMessage = HexToUInt8(data, dataLen);
-
-    SendAuthMessages();
 }
 
 void loop()
 {
-    
+    if (Serial.available() >= 3)
+    {
+        // Get user message
+        uint32_t id = (uint32_t)Serial.parseInt();
+        uint8_t dlc = (uint8_t)Serial.parseInt();
+        uint8_t *msg = new uint8_t[dlc+1];
+        for(int i = 0; i < dlc; i++)
+            msg[i] = (uint8_t)Serial.parseInt();
+        char *key = (char *)(Serial.readString().c_str());
+        uint8_t msgLen, keyLen;
+        SendAuthMessages(correct_key, keyLen, msg, msgLen);
+        Serial.flush();
+    }
 }
 
 
-void SendAuthMessages()
+void SendAuthMessages(char *key, uint8_t &keyLen, uint8_t *data, uint8_t &dataLen)
 {
     // Convert to uint8_t
     uint8_t *theKey = CStringToUInt8(key, keyLen);
-    uint8_t *theMessage = HexToUInt8(data, dataLen);
+    uint8_t *theMessage = data;
 
     // Concatenate into one full message
     uint8_t *fullMessage = new uint8_t[keyLen + dataLen + 1];
@@ -48,7 +50,7 @@ void SendAuthMessages()
 }
 
 
-uint8_t *HexToUInt8(char *hexStr, int &len)
+uint8_t *HexToUInt8(char *hexStr, uint8_t &len)
 {
     len = strlen(hexStr);
     uint8_t *buf = new uint8_t[len];
@@ -67,7 +69,7 @@ uint8_t *HexToUInt8(char *hexStr, int &len)
 }
 
 
-uint8_t *CStringToUInt8(char *str, int &len)
+uint8_t *CStringToUInt8(char *str, uint8_t &len)
 {
     len = strlen(str);
     uint8_t *buf = new uint8_t[len];

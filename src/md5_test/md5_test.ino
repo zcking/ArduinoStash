@@ -34,7 +34,14 @@ void loop()
         uint8_t *fullMessage = GetFullMessage(correct_key, keyLen, msg, msgLen, fullMsgLen);
         Serial.flush();
 
+        // Generate hash
+        unsigned char *hash = MD5::make_hash((char *)fullMessage);
+        // Digest
+        char *md5str = MD5::make_digest(hash, 20);
+        Serial.println(md5str);
+
         CAN.sendMsgBuf(id, 0, dlc, msg);
+
     }
 }
 

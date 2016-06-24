@@ -1,5 +1,6 @@
 #include <MD5.h>
 #include <mcp_can.h>
+#include <SPI.h>
 
 const int SPI_CS_PIN = 9;
 const int HASH_LEN = 20;

@@ -1,14 +1,40 @@
 #include <MD5.h>
 #include <mcp_can.h>
+#include <SPI.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 const int SPI_CS_PIN = 9;
-const int HASH_LEN = 20;
+const int HASH_LEN = 16;
+
+// "Control Units" -- LED Lights to be controlled
+const int blueLED = 4;
+const int greenLED = 3;
+
+// For the RGB LED
+const int RED = 7;
+const int GREEN = 5;
+const int BLUE = 6;
+
+// For the RGB LED
+int redValue = 255;
+int blueValue = 0;
+int greenValue = 0;
 
 // Shared keys - pretend these are stored
 // in a "Secure Hardware Module"
 String mil_key = "mil key";
 String door_key = "door key";
 String engine_key = "engine key";
+
+const uint32_t MIL_ID = 0x7e0;
+const uint32_t DOOR_ID = 0x7d0;
+const uint32_t ENGINE_ID = 0x7a0;
+
+// Incoming data variables
+uint32_t id;
+uint8_t dlc;
+uint8_t data[8] = {0};
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -22,79 +48,203 @@ void setup()
         Serial.println(" Init CAN BUS Shield again");
     }
     Serial.println("CAN BUS Shield init ok!");
+
+    // Initialize all the LEDs
+    pinMode(blueLED, OUTPUT);
+    pinMode(greenLED, OUTPUT);
+    pinMode(RED, OUTPUT);
+    pinMode(GREEN, OUTPUT);
+    pinMode(BLUE, OUTPUT);
+    digitalWrite(blueLED, LOW);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(RED, LOW);
+    digitalWrite(BLUE, LOW);
+    digitalWrite(GREEN, LOW);
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
-    if (Serial.available())
+    if (CAN_MSGAVAIL == CAN.checkReceive())   // check if data coming
     {
-        String sid = Serial.readStringUntil('#');
-        String message = Serial.readStringUntil(' ');
-        String key = Serial.readString();
-  
-        // Parse and convert
-        uint32_t id = 0;
-        id += (uint32_t)(CharToUInt8(sid.charAt(0))) << 8;
-        id += (uint32_t)(CharToUInt8(sid.charAt(1))) << 4;
-        id += (uint32_t)CharToUInt8(sid.charAt(2));
-        uint8_t dlc = CharToUInt8(message.charAt(1));
-        String sdata = message.substring(2, 2+(dlc*2));
-        uint8_t data[8] = {0};
-        for(int i = 0, j = 0; i < dlc*2; i+=2, j++)
-        {
-            data[j] = CharToUInt8(sdata.charAt(i)) << 4;
-            data[j] += CharToUInt8(sdata.charAt(i+1));
-        }
-  
-        // Create digest
-        unsigned char *hash = MD5::make_hash((char *)(message.substring(2, message.length()) + key).c_str());
-        char *sdigest = MD5::make_digest(hash, HASH_LEN);
-        uint8_t digest[HASH_LEN] = {0};
-        for(int i = 0, j = 0; i < HASH_LEN*2; i+=2, j++)
-        {
-            digest[j] = CharToUInt8(sdigest[i]) << 4;
-            digest[j] += CharToUInt8(sdigest[i+1]);
-        }
+        // Store message data
+        id = CAN.getCanId(); 
+        CAN.readMsgBufID(&id, &dlc, data); // read buffer
+        Serial.println("------------------------------------------\n");
 
-        // Create the 3 auth messages
-        uint8_t msg1[8] = {0};
-        uint8_t msg2[8] = {0};
-        uint8_t msg3[8] = {0};
-        for(int i = 0; i < 8; i++)
+        // Authenticate the message
+        if (Authenticate())
         {
-            msg1[i] = digest[i];
-            msg2[i] = digest[i+8];
-            if (i < 4)
-                msg3[i] = digest[i+16];
-        }
+            // Display the message
+            PrintMessage();
 
-        // Send the messages
-        CAN.sendMsgBuf(id, 0, dlc, data);
-        CAN.sendMsgBuf(id, 0, 8, msg1);
-        CAN.sendMsgBuf(id, 0, 8, msg2);
-        CAN.sendMsgBuf(id, 0, 8, msg3);
-  
-        // Print everything to serial interface
-        Serial.print("ID: 0x");
-        Serial.println(id, HEX);
-        Serial.print("DLC: ");
-        Serial.println(dlc);
-        Serial.print("Data: ");
-        for (int i = 0; i < dlc; i++)
-        {
-            Serial.print("0x");
-            if (data[i] < 0x10)
-                Serial.print('0');
-            Serial.print(data[i], HEX);
-            Serial.print(' ');
+            Serial.println("\nAuthentication Successful");
+            TakeAction();
         }
-        Serial.println();
-        Serial.print("Key: ");
-        Serial.println(key);
-        Serial.print("Digest: ");
-        Serial.println(sdigest);
-        Serial.println("---------------------------------------\n");
+    }
+}
+
+
+String GetKey()
+{
+    switch(id)
+    {
+        case MIL_ID:
+            return mil_key;
+        case DOOR_ID:
+            return door_key;
+        case ENGINE_ID:
+            return engine_key;
+        default:
+            return "";
+    }
+}
+
+bool CompareAuthMessage(uint8_t recvd[], uint8_t expected[], int start=0, int quit=8)
+{
+    int err = 0;
+    for(int i = start; i < quit; i++)
+    {
+        if (recvd[i] != expected[i])
+            return false;
+    }
+    return true;
+}
+
+
+bool Authenticate()
+{
+    // For storing incoming digest
+    uint8_t msg1[8] = {0};
+    uint8_t msg2[8] = {0};
+    uint8_t msg3[8] = {0};
+    uint8_t len;
+
+    // Get the correct key according to the id
+    String key = GetKey();
+
+    // Generate the correct digest according to the data
+    String message = "";
+    for(int i = 0; i < dlc; i++)
+    {
+        if (data[i] < 0x10)
+            message += '0';
+        message += String(data[i], HEX);
+    }
+    message.toLowerCase();
+
+    Serial.print("Hashing: ");
+    Serial.println(message + key);
+    unsigned char *hash = MD5::make_hash((char *)((message + key).c_str()));
+    char *sdigest = MD5::make_digest(hash, HASH_LEN);
+
+    // Convert the correct hash to uint8_t[]
+    uint8_t digest[HASH_LEN] = {0};
+    Serial.print("Converted: ");
+    for(int i = 0, j = 0; i < HASH_LEN*2; i+=2, j++)
+    {
+        digest[j] = CharToUInt8(sdigest[i]) * 16;
+        digest[j] += CharToUInt8(sdigest[i+1]);
+        Serial.print(digest[i], HEX);
+        Serial.print(' ');
+    }
+    Serial.println();
+
+    // Create the 3 expected auth messages
+    uint8_t correct_msg1[8] = {0};
+    uint8_t correct_msg2[8] = {0};
+    uint8_t correct_msg3[8] = {0};
+    for(int i = 0; i < 8; i++)
+    {
+        correct_msg1[i] = digest[i];
+        correct_msg2[i] = digest[i+8];
+        if (i < 4)
+            correct_msg3[i] = digest[i+16];
+    }
+
+    // Read in the three sections of the digest and check them
+    CAN.readMsgBuf(&len, msg1);
+    if (!CompareAuthMessage(msg1, correct_msg1)) Serial.println("MSG1 fail");
+    CAN.readMsgBuf(&len, msg2);
+    if (!CompareAuthMessage(msg2, correct_msg2)) Serial.println("MSG2 fail");
+    CAN.readMsgBuf(&len, msg3);
+    if (!CompareAuthMessage(msg3, correct_msg3)) Serial.println("MSG3 fail");
+
+    Serial.print("Good Digest: ");
+    Serial.println(sdigest);
+    return true;
+}
+
+
+//---------------------------------------------------------------------------------------
+// Prints the CAN message to the Serial interface
+//---------------------------------------------------------------------------------------
+void PrintMessage()
+{
+    Serial.println("Received Message:");
+    Serial.print("\tID ---> ");
+    Serial.println(id, HEX);
+    Serial.print("\tDLC --> ");
+    Serial.println(dlc);
+    Serial.print("\tDATA -> ");
+
+    for(int i = 0; i < dlc; i++)    // print the data
+    {
+        if (data[i] < 0x10)
+            Serial.print("0");
+        Serial.print(data[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
+}
+
+
+void TakeAction()
+{
+    switch(id)
+    {
+      case MIL_ID:
+        if (dlc > 0 && data[0] > 0)
+            digitalWrite(greenLED, HIGH);
+        else
+            digitalWrite(greenLED, LOW);
+        break;
+      case DOOR_ID:
+        if (dlc > 0 && data[0] > 0)
+            digitalWrite(blueLED, HIGH);
+        else 
+            digitalWrite(blueLED, LOW);
+        break;
+      case ENGINE_ID:
+        if (dlc >= 3)
+        {
+          redValue = data[0];
+          blueValue = data[2];
+          greenValue = data[1];
+        }
+        else if (dlc == 2)
+        {
+          redValue = data[0];
+          greenValue = data[1];
+          blueValue = 0;
+        }
+        else if (dlc == 1)
+        {
+          redValue = data[0];
+          blueValue = 0;
+          greenValue = 0;
+        }
+        else
+        {
+          redValue = 0;
+          greenValue = 0;
+          blueValue = 0;
+        }
+        redValue = redValue % 255;
+        greenValue = greenValue % 255;
+        blueValue = blueValue % 255;
+        analogWrite(RED, redValue);
+        analogWrite(GREEN, greenValue);
+        analogWrite(BLUE, blueValue);
     }
 }
 
@@ -116,23 +266,6 @@ void PrintHexByte(uint8_t val)
     if (val < 0x10)
         Serial.print('0');
     Serial.print(val, HEX);
-}
-
-
-uint8_t *GetFullMessage(char *key, uint8_t &keyLen, uint8_t *data, uint8_t &dataLen, uint8_t &lenVar)
-{
-    // Convert to uint8_t
-    uint8_t *theKey = CStringToUInt8(key, keyLen);
-    uint8_t *theMessage = data;
-
-    // Concatenate into one full message
-    uint8_t *fullMessage = new uint8_t[keyLen + dataLen + 1];
-    for(int i = 0; i < dataLen; i++)
-        fullMessage[i] = theMessage[i];    
-    for(int i = 0; i < keyLen; i++)
-        fullMessage[i + dataLen] = theKey[i];
-
-    lenVar = keyLen + dataLen;
 }
 
 
@@ -179,6 +312,17 @@ uint8_t CharToUInt8(char ch)
     else
         value = (ch - 'A') + 10;
     return value;
+}
+
+
+char UInt8ToChar(uint8_t x)
+{
+    char ch = (char)x;
+    if (x >= 0 && x <= 9)
+        ch += '0';
+    else if (x >= 10 && x <= 15)
+        ch += 'a';
+    return ch;
 }
 
 uint8_t CharByteToUInt8(char ch1, char ch2)

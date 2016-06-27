@@ -112,6 +112,147 @@ void loop()
         }
         Serial.println("\n---------------------------------------\n");
     }
+    // Otherwise, generate a random, valid CAN message
+    uint32_t id = 0;
+    uint8_t dlc = 0;
+    unsigned char *stmp = new unsigned char[8];
+    GenerateMessage(id, dlc, &stmp[0]);
+    CAN.sendMsgBuf(id, 0, dlc, stmp);
+    SendAuthMessages(id, dlc, stmp);
+
+    // Display Message on Serial interface
+    PrintMessage(id, dlc, &stmp[0]);
+    Serial.flush();
+    delay(1000);
+}
+
+void PrintMessage(uint32_t id, uint8_t dlc, uint8_t *stmp)
+{
+    Serial.print("ID: ");
+    Serial.println(id, HEX);
+    Serial.print("DLC: ");
+    Serial.println(dlc, HEX);
+    Serial.print("Data: ");
+    for (int i = 0; i < dlc; i++)
+    {
+      if (stmp[i] < 0x10)
+          Serial.print('0');
+      Serial.print(stmp[i], HEX);
+      Serial.print(' ');
+    }
+    Serial.print("\n\r-------------------------------------------\n\r");
+}
+
+void StampTime(uint8_t *buf)
+{
+    unsigned long ms = millis(); 
+
+    // Store the timestamp
+    buf[0] = (int)((ms >> 24) & 0xFF);
+    buf[1] = (int)((ms >> 16) & 0xFF);
+    buf[2] = (int)((ms >> 8) & 0xFF);
+    buf[3] = (int)((ms & 0xFF));
+}
+
+
+void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
+{
+    // Create the digest
+    const uint8_t *theKey;
+    theKey = GetKey(id);
+    int keyLen = GetKeyLen(id);
+    Sha1.initHmac(theKey, keyLen);
+    WriteBytes((const uint8_t *)buf, dlc);
+    hash = Sha1.resultHmac();
+
+    // Create the 3 auth messages
+    uint8_t msg1[8];
+    uint8_t msg2[8];
+    uint8_t msg3[8];
+
+    for(int i = 0; i < 8; i++) msg1[i] = hash[i];
+    for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
+    for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
+
+    // Fill msg3 last 4 bytes with timestamp
+    //StampTime(&msg3[4]);
+
+    // Send the auth messages
+    CAN.sendMsgBuf(id, 0, 8, msg1);
+    CAN.sendMsgBuf(id, 0, 8, msg2);
+    CAN.sendMsgBuf(id, 0, 4, msg3);
+
+    Serial.print("Sending Digest: ");
+    PrintHash(hash);
+}
+
+void PrintHash(uint8_t *hash)
+{
+    for (int i = 0; i < 20; i++)
+    {
+        if (hash[i] < 0x10)
+            Serial.print('0');
+        Serial.print(hash[i], HEX);
+    }
+    Serial.println();
+}
+
+
+const uint8_t * GetKey(uint32_t id)
+{
+    switch(id)
+    {
+        case MIL_ID:
+            return MIL_KEY;
+        case DOOR_ID:
+            return DOOR_KEY;
+        case ENGINE_ID:
+            return ENGINE_KEY;
+        default:
+            return 0;
+    }
+}
+
+int GetKeyLen(uint32_t id)
+{
+    switch(id)
+    {
+        case MIL_ID:
+          return MIL_KEY_LEN;
+        case DOOR_ID:
+          return DOOR_KEY_LEN;
+        case ENGINE_ID:
+          return ENGINE_KEY_LEN;
+        default:
+          return -1;
+    }
+}
+
+
+void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
+{
+    int selector = random(3);
+    id = SelectMessage(selector);
+    dlc = random(9);
+    for(int i = 0; i < dlc; i++)
+    {
+      data[i] = random(0x100); // each byte is random char between 0..0xFF
+    }
+    for(int i = dlc; i < 8; i++)
+    {
+      data[i] = 0;
+    }
+}
+
+int SelectMessage(int selector)
+{
+    switch(selector)
+    {
+        case 0: return MIL_ID;
+        case 1: return DOOR_ID;
+        case 2: return ENGINE_ID;
+        default: return -1;
+    }
 }
 
 

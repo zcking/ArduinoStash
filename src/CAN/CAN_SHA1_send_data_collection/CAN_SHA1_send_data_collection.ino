@@ -148,7 +148,7 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
 
     // Fill msg3 last 4 bytes with timestamp
-    //StampTime(&msg3[4]);
+    StampTime(&msg3[4]);
 
     // Send the auth messages
     CAN.sendMsgBuf(id, 0, 8, msg1);

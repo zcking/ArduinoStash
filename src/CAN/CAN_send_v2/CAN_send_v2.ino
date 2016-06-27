@@ -35,7 +35,6 @@ void setup()
     {
         Serial.println("CAN BUS Shield init fail");
         Serial.println(" Init CAN BUS Shield again");
-        delay(200);
     }
     Serial.println("CAN BUS Shield init ok!");
 }
@@ -71,14 +70,14 @@ void loop()
     // Display message on Serial interface
     PrintMessage();
     Serial.flush();
-    delay(10);
+    delay(1);
 }
 
 
 void ReadKey(uint8_t *keyBuffer, uint8_t &maxLen)
 {
     int index = 0;
-    Serial.print("Entered Key: ");
+//    Serial.print("Entered Key: ");
     while (Serial.available())
     {
         keyBuffer[index] = Serial.parseInt();
@@ -130,6 +129,7 @@ void SendAuthMessagesByKey(uint8_t *key, uint8_t keyLen)
     uint8_t msg1[8];
     uint8_t msg2[8];
     uint8_t msg3[8];
+
     for (int i = 0; i < 8; i++) msg1[i] = hash[i];
     for (int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
     for (int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
@@ -234,7 +234,7 @@ void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
 {
     int selector = random(3);
     id = SelectMessage(selector);
-    dlc = random(9);  // dlc = random int between 0..8
+    dlc = random(9);
     for(int i = 0; i < dlc; i++)
     {
       data[i] = random(0x100); // each byte is random char between 0..0xFF

@@ -47,7 +47,7 @@ void setup()
 {
     Serial.begin(115200);
 
-    while (CAN_OK != CAN.begin(CAN_500KBPS))
+    while (CAN_OK != CAN.begin(CAN_1000KBPS))
     {
         Serial.println("CAN BUS Shield init fail");
         Serial.println(" Init CAN BUS Shield again");
@@ -67,6 +67,13 @@ void setup()
     digitalWrite(GREEN, LOW);
 }
 
+
+// For data collection - quantity of messages received
+unsigned long numReceived = 0;
+int timer = 0;
+int oldTime = 0; 
+int sec = 0;
+
 void loop()
 {
     if (CAN_MSGAVAIL == CAN.checkReceive())   // check if data coming
@@ -75,16 +82,29 @@ void loop()
         id = CAN.getCanId(); 
         CAN.readMsgBufID(&id, &dlc, data); // read buffer
 
-        // Authenticate the message
-        if (Authenticate())
+        // Increment counter
+        numReceived++;
+        timer = second(now());
+        if (timer > oldTime)
         {
-            // Display the message
-            PrintMessage();
-
-            Serial.println("\nAuthentication Successful");
-            TakeAction();
-            Serial.println("------------------------------------------\n");
+            oldTime = timer;
+            sec++; // current second
+            Serial.print(sec);
+            Serial.print(":");
+            Serial.println(numReceived);
+            numReceived = 0;
         }
+
+        // Authenticate the message
+        //if (Authenticate())
+        //{
+            // Display the message
+            //PrintMessage();
+
+            //Serial.println("\nAuthentication Successful");
+            //TakeAction();
+            //Serial.println("------------------------------------------\n");
+        //}
     }
 }
 
@@ -146,10 +166,6 @@ bool Authenticate()
     }
     message.toLowerCase();
 
-    //Serial.print("Hashing: ");
-    //Serial.println(message);
-    //Serial.print("Key: ");
-    //Serial.println((const char *)key);
     Sha1.initHmac(key, keyLen);
     WriteBytes((const uint8_t *)message.c_str(), message.length());
     uint8_t *correct_hash;
@@ -174,8 +190,8 @@ bool Authenticate()
     //PrintMessage(id, len, &msg2[0]);
     if (!CompareAuthMessage(msg2, 8, 8)) return false;
 
-    Serial.print("Received Correct Digest: ");
-    PrintHash(hash);
+    //Serial.print("Received Correct Digest: ");
+    //PrintHash(hash);
     return true;
 }
 

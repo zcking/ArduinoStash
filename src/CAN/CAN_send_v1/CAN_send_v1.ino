@@ -48,7 +48,7 @@ void loop()
    
     // send data:  id = 0x00, standrad frame, data len = 8, stmp: data buf
     CAN.sendMsgBuf(id, 0, dlc, stmp);
-    delay(1);                       // send data per 100ms
+    delay(100);                       // send data per 100ms
 }
 
 

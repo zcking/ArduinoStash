@@ -61,7 +61,6 @@ void setup()
     {
         Serial.println("CAN BUS Shield init fail");
         Serial.println(" Init CAN BUS Shield again");
-        delay(200);
     }
     Serial.println("CAN BUS Shield init ok!");
 
@@ -196,9 +195,7 @@ bool Authenticate()
     uint8_t msg1[8];
     uint8_t msg2[8];
     uint8_t msg3[8];
-    uint8_t len1 = 0;
-    uint8_t len2 = 0;
-    uint8_t len3 = 0;
+    uint8_t len;
     
     // Get the Correct Key according to the current data
     uint8_t key[100] = {0}; // buffer for the key
@@ -217,9 +214,16 @@ bool Authenticate()
     spritz_mac(&correct_hash[0], HASH_LEN, &data[0], dlc, &key[0], keyLen);
     
     // Read in the three hash messages
-    CAN.readMsgBuf(&len1, msg1); // msg1 (first 8 bytes)
-    CAN.readMsgBuf(&len2, msg2); // msg2 (last 8 bytes [4 for timestamp])
-    CAN.readMsgBuf(&len3, msg3); // msg3 (second 8 bytes - order is weird)
+    CAN.readMsgBuf(&len, msg1); // msg1 (first 8 bytes)
+    CAN.readMsgBuf(&len, msg2); // msg2 (last 8 bytes [4 for timestamp])
+    CAN.readMsgBuf(&len, msg3); // msg3 (second 8 bytes - order is weird)
+
+    // Verify the timestamp/freqency
+    if (!VerifyTimestamp(&msg2[4]))
+    {
+        //Serial.println("Failed Frequency Check");
+        return false;
+    }
 
     // Fill the incoming_hash 
     for (int i = 0; i < 8; i++)
@@ -228,13 +232,6 @@ bool Authenticate()
       incoming_hash[i + 8] = msg3[i];
       if (i < 4)
         incoming_hash[i + 16] = msg2[i];
-    }
-
-    // Verify the timestamp/freqency
-    if (!VerifyTimestamp(&msg2[4]))
-    {
-        //Serial.println("Failed Frequency Check");
-        return false;
     }
 
     // Print the incoming_hash

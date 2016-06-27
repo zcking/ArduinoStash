@@ -56,5 +56,5 @@ if __name__ == '__main__':
             plot_data(sys.argv[i])
 
     print(average)
-    plt.plot([average] * 50)
+    #plt.plot([average] * 50)
     plt.show()

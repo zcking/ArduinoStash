@@ -27,6 +27,7 @@ unsigned long numReceived = 0;
 int timer = 0;
 int oldTime = 0;
 int sec = 0;
+int counter = 0;
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -61,8 +62,14 @@ void loop()
 
     // Create digest
     const uint8_t *key = (const uint8_t *)skey.c_str();
+    unsigned long start = micros();
     Sha1.initHmac(key, skey.length());
     WriteBytes((const uint8_t *)sdata.c_str(), sdata.length());
+    unsigned long delta = micros() - start;
+    Serial.print(counter);
+    Serial.print(':');
+    Serial.println(delta);
+    counter++;
     hash =  Sha1.resultHmac();
 
     // Create the 3 auth messages
@@ -86,7 +93,7 @@ void loop()
     // Increment counter
     numReceived++;
     timer = second(now());
-    if (timer > oldTime)
+    if (false && timer > oldTime)
     {
         oldTime = timer;
         sec++; // current second

@@ -32,3 +32,9 @@ with different delay values to see if they yield different results.
 1. 6.7484 %  
 2. 7.4634 %  
 **Total Average:** 7.1059
+
+---
+
+### Time Measurement of Authentication
+The average time it took to authenticate a CAN message was 3973.04 microseconds,
+or 3.97304 milliseconds.

@@ -45,7 +45,7 @@ uint8_t *hash;
 unsigned long mil_timestamp = 0;
 unsigned long door_timestamp = 0;
 unsigned long engine_timestamp = 0;
-const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
+const unsigned long MIN_FREQUENCY = 5000; // how many milliseconds apart a message has to be from its replay
 
 // For data collection - quantity of messages received
 unsigned long numReceived = 0;
@@ -216,20 +216,54 @@ bool Authenticate()
     CAN.readMsgBuf(&len, msg2);
     //PrintMessage(id, len, &msg2[0]);
     if (!CompareAuthMessage(msg2, 8, 8)) return false;
-//    Serial.print("Received Digest: ");
-//    for(int i = 0; i < 8; i++)
-//    {
-//        rec_hash[i] = msg1[i];
-//        rec_hash[i+8] = msg2[i];
-//        if (i < 4)
-//            rec_hash[i+16] = msg3[i];
-//    }
-//    PrintHash(&rec_hash[0]);
-//    Serial.println();
+
+    // Verify the timestamp/frequency
+    if (!VerifyTimestamp(&msg3[4]))
+    {
+        Serial.println("Failed Frequency Check");
+        return false;
+    }
 
     Serial.print("Received Correct Digest: ");
     PrintHash(hash);
     return true;
+}
+
+
+bool VerifyTimestamp(uint8_t *buf)
+{
+    // Unpack the 4 bytes in buf to store as milliseconds
+    unsigned long ms = buf[0] << 24;
+    ms += buf[1] << 16;
+    ms += buf[2] << 8;
+    ms += buf[3];
+
+    // Get the appropriate stored timestamp to compare against
+    unsigned long *lastStamp;
+    if (id == MIL_ID)
+      lastStamp = &mil_timestamp;
+    else if (id == DOOR_ID)
+      lastStamp = &door_timestamp;
+    else if (id == ENGINE_ID)
+      lastStamp = &engine_timestamp;
+
+    Serial.print("Received Timestamp: ");
+    Serial.println(ms);
+    Serial.print("Last Timestamp: ");
+    Serial.println(*lastStamp);
+
+    if (*lastStamp > ms) // ms must have exceded max value and started over 
+    {
+        *lastStamp = ms;
+        return true;
+    }
+    
+    if ((*lastStamp + MIN_FREQUENCY) <= ms)
+    {
+        *lastStamp = ms;
+        return true;
+    }
+    return false;
 }
 
 

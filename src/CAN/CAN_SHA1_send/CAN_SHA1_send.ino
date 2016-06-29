@@ -192,7 +192,7 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     // Send the auth messages
     CAN.sendMsgBuf(id, 0, 8, msg1);
     CAN.sendMsgBuf(id, 0, 8, msg2);
-    CAN.sendMsgBuf(id, 0, 4, msg3);
+    CAN.sendMsgBuf(id, 0, 8, msg3);
 
     Serial.print("Sending Digest: ");
     PrintHash(hash);

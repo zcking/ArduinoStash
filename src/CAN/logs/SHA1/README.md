@@ -35,6 +35,9 @@ with different delay values to see if they yield different results.
 
 ---
 
+**Note:** these values are driven by the Arduino Genuino/Uno  board, and 
+may vary with different CPUs.  
+
 ### Time Measurement to Write HMAC Data
 The average time it took to write the HMAC data (not actually created the HMAC), 
 was 3973.04 microseconds, or 3.97304 milliseconds.  
@@ -45,4 +48,4 @@ messages was 15,443.0204 microseconds, or 15.44302 milliseconds.
 
 ### Time Measurement to Authenticate a Message  
 The complete time it took to authenticate the HMAC and verify 
-the timestamp freshness is 
+the timestamp freshness is 34,982.2222 microseconds, or 34.9822 milliseconds.  

@@ -45,7 +45,7 @@ uint8_t *hash;
 unsigned long mil_timestamp = 0;
 unsigned long door_timestamp = 0;
 unsigned long engine_timestamp = 0;
-const unsigned long MIN_FREQUENCY = 5000; // how many milliseconds apart a message has to be from its replay
+const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
 
 // For data collection - quantity of messages received
 unsigned long numReceived = 0;
@@ -55,7 +55,7 @@ int sec = 0;
 int counter = 0;
 
 const bool MEASURE_RECEIVED_BYTES = false;
-const bool MEASURE_TIME_TO_AUTH = false;
+const bool MEASURE_TIME_TO_AUTH = true;
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -98,7 +98,7 @@ void loop()
         {
             numReceived++;
             timer = second(now());
-            if (false && timer > oldTime)
+            if (timer > oldTime)
             {
                 oldTime = timer;
                 sec++; // current second
@@ -115,11 +115,11 @@ void loop()
         if (Authenticate())
         {
              // Display the message
-            PrintMessage();
+//            PrintMessage();
 
-            Serial.println("\nAuthentication Successful");
-            TakeAction();
-            Serial.println("------------------------------------------\n");
+//            Serial.println("\nAuthentication Successful");
+//            TakeAction();
+//            Serial.println("------------------------------------------\n");
         }
         unsigned long delta = micros() - start;
         counter++;
@@ -224,8 +224,8 @@ bool Authenticate()
         return false;
     }
 
-    Serial.print("Received Correct Digest: ");
-    PrintHash(hash);
+//    Serial.print("Received Correct Digest: ");
+//    PrintHash(hash);
     return true;
 }
 
@@ -247,10 +247,10 @@ bool VerifyTimestamp(uint8_t *buf)
     else if (id == ENGINE_ID)
       lastStamp = &engine_timestamp;
 
-    Serial.print("Received Timestamp: ");
-    Serial.println(ms);
-    Serial.print("Last Timestamp: ");
-    Serial.println(*lastStamp);
+//    Serial.print("Received Timestamp: ");
+//    Serial.println(ms);
+//    Serial.print("Last Timestamp: ");
+//    Serial.println(*lastStamp);
 
     if (*lastStamp > ms) // ms must have exceded max value and started over 
     {

@@ -31,7 +31,7 @@ with different delay values to see if they yield different results.
 #### Log |  Percent Decrease
 1. 6.7484 %  
 2. 7.4634 %  
-**Total Average:** 7.1059
+**Total Average:** 7.1059 %
 
 ---
 
@@ -39,8 +39,9 @@ with different delay values to see if they yield different results.
 may vary with different CPUs.  
 
 ### Time Measurement to Write HMAC Data
-The average time it took to write the HMAC data (not actually created the HMAC), 
-was 3973.04 microseconds, or 3.97304 milliseconds.  
+The average time it took to update the HMAC hash (not actually created the HMAC), 
+was 3973.04 microseconds, or 3.97304 milliseconds. *Note:* this value is part 
+of the time measurement to create the full authentication messages (below).  
 
 ### Time Measurement to Create Full Authentication Messages   
 The complete time it took to create the HMAC and timestamp authentication 

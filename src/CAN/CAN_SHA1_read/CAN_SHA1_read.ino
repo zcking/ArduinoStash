@@ -41,6 +41,22 @@ uint8_t dlc;
 uint8_t data[8] = {0};
 uint8_t *hash;
 
+// For timestamp verification 
+unsigned long mil_timestamp = 0;
+unsigned long door_timestamp = 0;
+unsigned long engine_timestamp = 0;
+const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
+
+// For data collection - quantity of messages received
+unsigned long numReceived = 0;
+int timer = 0;
+int oldTime = 0; 
+int sec = 0;
+int counter = 0;
+
+const bool MEASURE_RECEIVED_BYTES = false;
+const bool MEASURE_TIME_TO_AUTH = false;
+
 MCP_CAN CAN(SPI_CS_PIN);
 
 void setup()
@@ -67,6 +83,8 @@ void setup()
     digitalWrite(GREEN, LOW);
 }
 
+
+
 void loop()
 {
     if (CAN_MSGAVAIL == CAN.checkReceive())   // check if data coming
@@ -75,15 +93,40 @@ void loop()
         id = CAN.getCanId(); 
         CAN.readMsgBufID(&id, &dlc, data); // read buffer
 
+        // Increment counter
+        if (MEASURE_RECEIVED_BYTES)
+        {
+            numReceived++;
+            timer = second(now());
+            if (timer > oldTime)
+            {
+                oldTime = timer;
+                sec++; // current second
+                Serial.print(sec);
+                Serial.print(":");
+                Serial.println(numReceived);
+                numReceived = 0;
+            }
+        }
+
         // Authenticate the message
+        unsigned long start = micros();
+        bool good = Authenticate();
         if (Authenticate())
         {
-            // Display the message
+             // Display the message
             PrintMessage();
-
             Serial.println("\nAuthentication Successful");
             TakeAction();
             Serial.println("------------------------------------------\n");
+        }
+        unsigned long delta = micros() - start;
+        counter++;
+        if (MEASURE_TIME_TO_AUTH)
+        {
+            Serial.print(counter);
+            Serial.print(':');
+            Serial.println(delta);
         }
     }
 }
@@ -146,37 +189,80 @@ bool Authenticate()
     }
     message.toLowerCase();
 
-    Serial.print("Hashing: ");
-    Serial.println(message);
-    Serial.print("Key: ");
-    Serial.println((const char *)key);
     Sha1.initHmac(key, keyLen);
     WriteBytes((const uint8_t *)message.c_str(), message.length());
     uint8_t *correct_hash;
     hash = Sha1.resultHmac();
+//    Serial.print("Expected Digest: ");
+//    PrintHash(hash);
 
     // For storing incoming digest
     uint8_t msg1[8] = {0};
     uint8_t msg2[8] = {0};
     uint8_t msg3[8] = {0};
+    uint8_t rec_hash[20] = {0};
     uint8_t len;
 
     // Read in the three sections of the digest and check them
     CAN.readMsgBuf(&len, msg1);
-    PrintMessage(id, len, &msg1[0]);
-    if (!CompareAuthMessage(msg1, 8, 0)) Serial.println("MSG1 fail");
+    //PrintMessage(id, len, &msg1[0]);
+    if (!CompareAuthMessage(msg1, 8, 0)) return false;
     
     CAN.readMsgBuf(&len, msg3);
-    PrintMessage(id, len, &msg3[0]);
-    if (!CompareAuthMessage(msg3, 4, 16)) Serial.println("MSG3 fail");
+    //PrintMessage(id, len, &msg3[0]);
+    if (!CompareAuthMessage(msg3, 4, 16)) return false;
     
     CAN.readMsgBuf(&len, msg2);
-    PrintMessage(id, len, &msg2[0]);
-    if (!CompareAuthMessage(msg2, 8, 8)) Serial.println("MSG2 fail");
+    //PrintMessage(id, len, &msg2[0]);
+    if (!CompareAuthMessage(msg2, 8, 8)) return false;
+
+    // Verify the timestamp/frequency
+    if (!VerifyTimestamp(&msg3[4]))
+    {
+        Serial.println("Failed Frequency Check");
+        return false;
+    }
 
     Serial.print("Received Correct Digest: ");
     PrintHash(hash);
     return true;
+}
+
+
+bool VerifyTimestamp(uint8_t *buf)
+{
+    // Unpack the 4 bytes in buf to store as milliseconds
+    unsigned long ms = buf[0] << 24;
+    ms += buf[1] << 16;
+    ms += buf[2] << 8;
+    ms += buf[3];
+
+    // Get the appropriate stored timestamp to compare against
+    unsigned long *lastStamp;
+    if (id == MIL_ID)
+      lastStamp = &mil_timestamp;
+    else if (id == DOOR_ID)
+      lastStamp = &door_timestamp;
+    else if (id == ENGINE_ID)
+      lastStamp = &engine_timestamp;
+
+//    Serial.print("Received Timestamp: ");
+//    Serial.println(ms);
+//    Serial.print("Last Timestamp: ");
+//    Serial.println(*lastStamp);
+
+    if (*lastStamp > ms) // ms must have exceded max value and started over 
+    {
+        *lastStamp = ms;
+        return true;
+    }
+    
+    if ((*lastStamp + MIN_FREQUENCY) <= ms)
+    {
+        *lastStamp = ms;
+        return true;
+    }
+    return false;
 }
 
 

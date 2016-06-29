@@ -62,66 +62,24 @@ void loop()
             data[j] += CharToUInt8(sdata.charAt(i+1));
         }
   
-        // Create digest
-        const uint8_t *key = (const uint8_t *)skey.c_str();
-        Sha1.initHmac(key, skey.length());
-        WriteBytes((const uint8_t *)sdata.c_str(), sdata.length());
-        hash =  Sha1.resultHmac();
-
-        // Create the 3 auth messages
-        uint8_t msg1[8] = {0};
-        uint8_t msg2[8] = {0};
-        uint8_t msg3[8] = {0};
-        for(int i = 0; i < 8; i++)
-        {
-            msg1[i] = hash[i];
-            msg2[i] = hash[i+8];
-            if (i < 4)
-                msg3[i] = hash[i+16];
-        }
-
-        // Send the messages
         CAN.sendMsgBuf(id, 0, dlc, data);
-        CAN.sendMsgBuf(id, 0, 8, msg1);
-        CAN.sendMsgBuf(id, 0, 8, msg2);
-        CAN.sendMsgBuf(id, 0, 8, msg3);
-  
-        // Print everything to serial interface
-        Serial.print("ID: 0x");
-        Serial.println(id, HEX);
-        Serial.print("DLC: ");
-        Serial.println(dlc);
-        Serial.print("Data: ");
-        for (int i = 0; i < dlc; i++)
-        {
-            Serial.print("0x");
-            if (data[i] < 0x10)
-                Serial.print('0');
-            Serial.print(data[i], HEX);
-            Serial.print(' ');
-        }
-        Serial.println();
-        Serial.print("Key: ");
-        Serial.println(skey);
-        Serial.print("Digest: ");
-        for(int i = 0; i < 20; i++)
-        {
-          if (hash[i] < 0x10)
-              Serial.print('0');
-          Serial.print(hash[i], HEX);
-        }
-        Serial.println("\n---------------------------------------\n");
-    }
-    // Otherwise, generate a random, valid CAN message
-    uint32_t id = 0;
-    uint8_t dlc = 0;
-    unsigned char *stmp = new unsigned char[8];
-    GenerateMessage(id, dlc, &stmp[0]);
-    CAN.sendMsgBuf(id, 0, dlc, stmp);
-    SendAuthMessages(id, dlc, stmp);
+        SendAuthMessagesByKey(id, dlc, data, skey);
 
-    // Display Message on Serial interface
-    PrintMessage(id, dlc, &stmp[0]);
+        PrintMessage(id, dlc, &data[0]);
+    }
+    else
+    {
+        // Otherwise, generate a random, valid CAN message
+        uint32_t id = 0;
+        uint8_t dlc = 0;
+        unsigned char *stmp = new unsigned char[8];
+        GenerateMessage(id, dlc, &stmp[0]);
+        CAN.sendMsgBuf(id, 0, dlc, stmp);
+        SendAuthMessages(id, dlc, stmp);
+    
+        // Display Message on Serial interface
+        PrintMessage(id, dlc, &stmp[0]);
+    }
     Serial.flush();
     delay(1000);
 }
@@ -197,6 +155,49 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     Serial.print("Sending Digest: ");
     PrintHash(hash);
 }
+
+void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
+{
+    // Create the digest
+    const uint8_t *theKey = (const uint8_t *)sKey.c_str();
+    int keyLen = sKey.length();
+    String message = "";
+    for(int i = 0; i < dlc; i++)
+    {
+        if (buf[i] < 0x10)
+            message += '0';
+        message += String(buf[i], HEX);
+    }
+    message.toLowerCase();
+    Serial.print("Hashing: ");
+    Serial.println(message);
+    Serial.print("Key: ");
+    Serial.println((const char *)theKey);
+    Sha1.initHmac(theKey, keyLen);
+    WriteBytes((const uint8_t *)message.c_str(), message.length());
+    hash = Sha1.resultHmac();
+
+    // Create the 3 auth messages
+    uint8_t msg1[8];
+    uint8_t msg2[8];
+    uint8_t msg3[8];
+
+    for(int i = 0; i < 8; i++) msg1[i] = hash[i];
+    for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
+    for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
+
+    // Fill msg3 last 4 bytes with timestamp
+    StampTime(&msg3[4]);
+
+    // Send the auth messages
+    CAN.sendMsgBuf(id, 0, 8, msg1);
+    CAN.sendMsgBuf(id, 0, 8, msg2);
+    CAN.sendMsgBuf(id, 0, 8, msg3);
+
+    Serial.print("Sending Digest: ");
+    PrintHash(hash);
+}
+
 
 void PrintHash(uint8_t *hash)
 {

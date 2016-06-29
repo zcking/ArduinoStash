@@ -13,17 +13,17 @@ with different delay values to see if they yield different results.
 ### Control Group
 
 #### Log |  Average Bytes Received Per Second
-1. 79.8367  
-2. 79.8361  
-**Total Average:** 79.8364
+1. 79.84
+2. 79.84
+**Total Average:** 79.84
 
 ---
 
 ### Experimental Group
 #### Log |  Average Bytes Received Per Second
-1. 69.0612  
-2. 67.9184  
-**Total Average:** 68.4898
+1. 69.06
+2. 67.92
+**Total Average:** 68.49
 
 ---
 

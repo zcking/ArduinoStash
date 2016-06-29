@@ -16,17 +16,21 @@ const int ENGINE_ID = 0x7a0;
 
 
 // Variables
-
 // For HMAC
 uint8_t *hash;
 
 
 MCP_CAN CAN(SPI_CS_PIN);
 
+
+
 void setup()
 {
+    // Initialize the serial interface
+    // with baud rate 115200
     Serial.begin(115200);
 
+    // Intialize CAN Bus Shield
     while (CAN_OK != CAN.begin(CAN_500KBPS))
     {
         Serial.println("CAN BUS Shield init fail");
@@ -34,7 +38,6 @@ void setup()
     }
     Serial.println("CAN BUS Shield init ok!");
 }
-
 
 
 
@@ -48,7 +51,7 @@ void loop()
         String message = Serial.readStringUntil(' ');
         String skey = Serial.readString();
   
-        // Parse and convert them 
+        // Parse and convert them appropriately
         uint32_t id = 0;
         id += (uint32_t)(CharToUInt8(sid.charAt(0))) << 8;
         id += (uint32_t)(CharToUInt8(sid.charAt(1))) << 4;
@@ -61,29 +64,42 @@ void loop()
             data[j] = CharToUInt8(sdata.charAt(i)) << 4;
             data[j] += CharToUInt8(sdata.charAt(i+1));
         }
-  
+
+        // Send the original message, followed by the 
+        // authentication messages
         CAN.sendMsgBuf(id, 0, dlc, data);
         SendAuthMessagesByKey(id, dlc, data, skey);
 
+        // Print the original message to serial interface
         PrintMessage(id, dlc, &data[0]);
     }
     else
     {
-        // Otherwise, generate a random, valid CAN message
+        // Otherwise, if the user didn't input a message, 
+        // generate a random, valid CAN message
         uint32_t id = 0;
         uint8_t dlc = 0;
         unsigned char *stmp = new unsigned char[8];
         GenerateMessage(id, dlc, &stmp[0]);
+
+        // Send the original message, followed
+        // by the authentication messages
         CAN.sendMsgBuf(id, 0, dlc, stmp);
         SendAuthMessages(id, dlc, stmp);
     
         // Display Message on Serial interface
         PrintMessage(id, dlc, &stmp[0]);
     }
+
+    // Flush the serial buffer
     Serial.flush();
-    delay(1000);
+    delay(1000);    // delay to actually be able to see serial output
 }
 
+
+//----------------------------------------------------------------------------
+// Print a CAN message to the serial interface.
+//----------------------------------------------------------------------------
 void PrintMessage(uint32_t id, uint8_t dlc, uint8_t *stmp)
 {
     Serial.print("ID: ");
@@ -101,6 +117,10 @@ void PrintMessage(uint32_t id, uint8_t dlc, uint8_t *stmp)
     Serial.print("\n\r-------------------------------------------\n\r");
 }
 
+
+//----------------------------------------------------------------------------
+// Fill the next four bytes of a buffer with the current timestamp
+//----------------------------------------------------------------------------
 void StampTime(uint8_t *buf)
 {
     unsigned long ms = millis(); 
@@ -113,12 +133,20 @@ void StampTime(uint8_t *buf)
 }
 
 
+//----------------------------------------------------------------------------
+// Send three authentication messages for a given CAN message.
+// The first 20 bytes are an HMAC, and the last 4 bytes are timestamp.
+// This function should only be used for generated messages.
+//----------------------------------------------------------------------------
 void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
 {
-    // Create the digest
+    // Get the correct key for this ID, and its length
     const uint8_t *theKey;
     theKey = GetKey(id);
     int keyLen = GetKeyLen(id);
+
+    // Convert the data to a string. Otherwise, incoming data 
+    // will be slightly different than actual data for the HMAC creation
     String message = "";
     for(int i = 0; i < dlc; i++)
     {
@@ -126,11 +154,15 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
             message += '0';
         message += String(buf[i], HEX);
     }
-    message.toLowerCase();
+    message.toLowerCase(); // for consistency
+
+    // Serial output for convenience
     Serial.print("Hashing: ");
     Serial.println(message);
     Serial.print("Key: ");
     Serial.println((const char *)theKey);
+
+    // Initialize the HMAC, write the string data, and create the HMAC
     Sha1.initHmac(theKey, keyLen);
     WriteBytes((const uint8_t *)message.c_str(), message.length());
     hash = Sha1.resultHmac();
@@ -140,6 +172,7 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     uint8_t msg2[8];
     uint8_t msg3[8];
 
+    // Store the hash in the 3 auth messages
     for(int i = 0; i < 8; i++) msg1[i] = hash[i];
     for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
     for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
@@ -152,15 +185,25 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     CAN.sendMsgBuf(id, 0, 8, msg2);
     CAN.sendMsgBuf(id, 0, 8, msg3);
 
+    // Serial output
     Serial.print("Sending Digest: ");
     PrintHash(hash);
 }
 
+
+//----------------------------------------------------------------------------
+// Send three authentication messages for a given CAN message and key.
+// The first 20 bytes are an HMAC, and the last 4 bytes are timestamp.
+// This function should only be used for user-inputted messages.
+//----------------------------------------------------------------------------
 void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
 {
-    // Create the digest
+    // Convert the key to uint8_t * and get the length
     const uint8_t *theKey = (const uint8_t *)sKey.c_str();
     int keyLen = sKey.length();
+
+    // Convert the data to a string. Otherwise, incoming data 
+    // will be slightly different than actual data for the HMAC creation 
     String message = "";
     for(int i = 0; i < dlc; i++)
     {
@@ -168,11 +211,15 @@ void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
             message += '0';
         message += String(buf[i], HEX);
     }
-    message.toLowerCase();
+    message.toLowerCase(); // for consistency
+
+    // Serial output
     Serial.print("Hashing: ");
     Serial.println(message);
     Serial.print("Key: ");
     Serial.println((const char *)theKey);
+
+    // Create the HMAC
     Sha1.initHmac(theKey, keyLen);
     WriteBytes((const uint8_t *)message.c_str(), message.length());
     hash = Sha1.resultHmac();
@@ -182,6 +229,7 @@ void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
     uint8_t msg2[8];
     uint8_t msg3[8];
 
+    // Fill the 3 auth messages with the hash
     for(int i = 0; i < 8; i++) msg1[i] = hash[i];
     for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
     for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
@@ -194,11 +242,16 @@ void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
     CAN.sendMsgBuf(id, 0, 8, msg2);
     CAN.sendMsgBuf(id, 0, 8, msg3);
 
+    // Serial output
     Serial.print("Sending Digest: ");
     PrintHash(hash);
 }
 
 
+//----------------------------------------------------------------------------
+// Takes a hash as uint8_t* and prints it in HEX to serial output.
+// Assumes the hash is 160-bit (20-bytes)
+//----------------------------------------------------------------------------
 void PrintHash(uint8_t *hash)
 {
     for (int i = 0; i < 20; i++)
@@ -211,6 +264,10 @@ void PrintHash(uint8_t *hash)
 }
 
 
+//----------------------------------------------------------------------------
+// Takes a valid CAN frame ID as uint32_t and return 
+// the correct key as uint8_t*
+//----------------------------------------------------------------------------
 const uint8_t * GetKey(uint32_t id)
 {
     switch(id)
@@ -226,6 +283,11 @@ const uint8_t * GetKey(uint32_t id)
     }
 }
 
+
+//----------------------------------------------------------------------------
+// Takes a valid CAN frame ID as uint32_t and return 
+// the length of the key as an int
+//----------------------------------------------------------------------------
 int GetKeyLen(uint32_t id)
 {
     switch(id)
@@ -242,6 +304,10 @@ int GetKeyLen(uint32_t id)
 }
 
 
+//----------------------------------------------------------------------------
+// Generate a pseudo-random CAN message. Takes frame ID (uint32_t), 
+// data length code (uint8_t), and data buffer (unsigned char *).
+//----------------------------------------------------------------------------
 void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
 {
     int selector = random(3);
@@ -257,6 +323,11 @@ void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
     }
 }
 
+
+//----------------------------------------------------------------------------
+// Takes an integer and returns a valid CAN frame ID.
+// If selector is invalid, returns -1.
+//----------------------------------------------------------------------------
 int SelectMessage(int selector)
 {
     switch(selector)
@@ -269,6 +340,9 @@ int SelectMessage(int selector)
 }
 
 
+//----------------------------------------------------------------------------
+// Writes, or updates, the SHA-1 hash with a data buffer (const uint8_t *).
+//----------------------------------------------------------------------------
 void WriteBytes(const uint8_t *data, int len)
 {
     for(int i = 0; i < len; i++)
@@ -277,6 +351,10 @@ void WriteBytes(const uint8_t *data, int len)
     }
 }
 
+
+//----------------------------------------------------------------------------
+// Converts a C string to uint8_t *
+//----------------------------------------------------------------------------
 void CStringHexToUInt8(char *str, uint8_t *buf)
 {
     for(int i = 0, j = 0; i < 40; i+=2, j++)
@@ -289,6 +367,9 @@ void CStringHexToUInt8(char *str, uint8_t *buf)
 }
 
 
+//----------------------------------------------------------------------------
+// Print a uint8_t value as HEX
+//----------------------------------------------------------------------------
 void PrintHexByte(uint8_t val)
 {
     if (val < 0x10)
@@ -297,23 +378,9 @@ void PrintHexByte(uint8_t val)
 }
 
 
-uint8_t *GetFullMessage(char *key, uint8_t &keyLen, uint8_t *data, uint8_t &dataLen, uint8_t &lenVar)
-{
-    // Convert to uint8_t
-    uint8_t *theKey = CStringToUInt8(key, keyLen);
-    uint8_t *theMessage = data;
-
-    // Concatenate into one full message
-    uint8_t *fullMessage = new uint8_t[keyLen + dataLen + 1];
-    for(int i = 0; i < dataLen; i++)
-        fullMessage[i] = theMessage[i];    
-    for(int i = 0; i < keyLen; i++)
-        fullMessage[i + dataLen] = theKey[i];
-
-    lenVar = keyLen + dataLen;
-}
-
-
+//----------------------------------------------------------------------------
+// Takes a C string of hex characters and converts it to uint8_t *
+//----------------------------------------------------------------------------
 uint8_t *HexToUInt8(char *hexStr, uint8_t &len)
 {
     len = strlen(hexStr);
@@ -333,6 +400,9 @@ uint8_t *HexToUInt8(char *hexStr, uint8_t &len)
 }
 
 
+//----------------------------------------------------------------------------
+// Takes a C string of integers and returns it as uint8_t *
+//----------------------------------------------------------------------------
 uint8_t *CStringToUInt8(char *str, uint8_t &len)
 {
     len = strlen(str);
@@ -347,6 +417,10 @@ uint8_t *CStringToUInt8(char *str, uint8_t &len)
     return buf;
 }
 
+
+//----------------------------------------------------------------------------
+// Takes a HEX char and returns its integer value as uint8_t
+//----------------------------------------------------------------------------
 uint8_t CharToUInt8(char ch)
 {
     uint8_t value = ch;
@@ -359,6 +433,11 @@ uint8_t CharToUInt8(char ch)
     return value;
 }
 
+
+//----------------------------------------------------------------------------
+// Takes two characters (a pair, resulting in a byte)
+// and returns their byte value as uint8_t
+//----------------------------------------------------------------------------
 uint8_t CharByteToUInt8(char ch1, char ch2)
 {
     uint8_t value = CharToUInt8(ch1);

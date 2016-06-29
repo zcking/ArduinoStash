@@ -17,10 +17,8 @@ const int ENGINE_ID = 0x7a0;
 
 
 // Variables
-
 // For HMAC
 uint8_t *hash;
-
 
 // For data collection
 unsigned long numReceived = 0;
@@ -41,10 +39,10 @@ void setup()
 }
 
 
-
-
 void loop()
 {
+    // Create placeholder variables for CAN message fields
+    // Strings for ease of input
     String sid = "7a0";
     String message = "020a0a";
     String skey = "engine key";

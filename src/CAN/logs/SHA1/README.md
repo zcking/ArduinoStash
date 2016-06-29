@@ -35,6 +35,17 @@ with different delay values to see if they yield different results.
 
 ---
 
+### Control v. Experimental Comparison  
+
+#### Log #1 Comparison
+![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/both-01.png)  
+
+#### Log #2 Comparison
+![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/both-02.png)  
+
+---
+
+
 **Note:** these values are driven by the Arduino Genuino/Uno  board, and
 may vary with different CPUs.  
 

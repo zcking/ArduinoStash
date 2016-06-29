@@ -35,18 +35,25 @@ with different delay values to see if they yield different results.
 
 ---
 
-**Note:** these values are driven by the Arduino Genuino/Uno  board, and 
+**Note:** these values are driven by the Arduino Genuino/Uno  board, and
 may vary with different CPUs.  
 
 ### Time Measurement to Update SHA-1 Hash
-The average time it took to update the SHA-1 hash (not actually created the HMAC), 
-was 3973.04 microseconds, or 3.97304 milliseconds. *Note:* this value is part 
+The average time it took to update the SHA-1 hash (not actually created the HMAC),
+was 3973.04 microseconds, or 3.97304 milliseconds. *Note:* this value is part
 of the time measurement to create the full authentication messages (below).  
 
+![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-01.png)  
+
+
 ### Time Measurement to Create Full Authentication Messages   
-The complete time it took to create the HMAC and timestamp authentication 
+The complete time it took to create the HMAC and timestamp authentication
 messages was 15,443.0204 microseconds, or 15.44302 milliseconds.  
 
+![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-02.png)  
+
 ### Time Measurement to Authenticate a Message  
-The complete time it took to authenticate the HMAC and verify 
+The complete time it took to authenticate the HMAC and verify
 the timestamp freshness is 34,982.2222 microseconds, or 34.9822 milliseconds.  
+
+![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-03.png)  

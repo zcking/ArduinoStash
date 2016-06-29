@@ -20,9 +20,13 @@ average = 0
 total = 0
 counter = 0
 
-def plot_data(file_path):
-    global minimx, minimy, maximx, maximy, average, total, counter
+legend_handles = []
+
+def plot_data(file_path, label=None):
+    global minimx, minimy, maximx, maximy, average, total, counter, legend_handles
     
+    prev = 0
+
     with open(file_path, 'r') as f:
         entries = f.read().splitlines() # read all the lines into a list
         start = float(entries[0].split(':')[0]) # get first second
@@ -31,8 +35,9 @@ def plot_data(file_path):
         counter += (end - start)
         values = []
         for entry in entries:
-            values.append(int(entry.split(':')[1]))
+            values.append(prev + int(entry.split(':')[1]))
             total += (int(entry.split(':')[1]))
+            prev += int(entry.split(':')[1])
         average = total / counter
 
         minimx = min(minimx, start)
@@ -40,20 +45,24 @@ def plot_data(file_path):
         minimy = min(minimy, min(values))
         maximy = max(maximy, max(values))
 
-        plt.plot(values)
-        plt.axis([minimx, maximx, minimy+2000, maximy+1500])
-        plt.ylabel('Time used to Authenticate (microseconds)')
-        plt.xlabel('Message Index')
-        plt.title('Time Measurement of Authenticating CAN Messages')
+        l, = plt.plot(values, label=label)
+        legend_handles.append(l)
+        plt.axis([minimx, maximx, minimy, maximy])
         
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('Usage: python plot_log.py <logfile-path> *')
+    if len(sys.argv) < 5:
+        print('Usage: python plot_log.py <title> <x-axis-label> <y-axis-label> <log-filepath-1> <label-1> ...*')
         sys.exit(1)
     else:
-        for i in range(1, len(sys.argv)):
-            plot_data(sys.argv[i])
+        for i in range(4, len(sys.argv), 2):
+            plot_data(sys.argv[i], label=sys.argv[i+1])
+        plt.title(sys.argv[1])
+        plt.xlabel(sys.argv[2])
+        plt.ylabel(sys.argv[3])
+        plt.legend(handles=legend_handles, bbox_to_anchor=(0.6, 0.05, 0, 0), loc=3,
+           ncol=1)
+
 
     print(average)
     plt.show()

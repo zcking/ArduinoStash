@@ -22,6 +22,7 @@ counter = 0
 
 def plot_data(file_path):
     global minimx, minimy, maximx, maximy, average, total, counter
+    prev = 0
     
     with open(file_path, 'r') as f:
         entries = f.read().splitlines() # read all the lines into a list
@@ -31,8 +32,9 @@ def plot_data(file_path):
         counter += (end - start)
         values = []
         for entry in entries:
-            values.append(int(entry.split(':')[1]))
+            values.append(prev + int(entry.split(':')[1]))
             total += (int(entry.split(':')[1]))
+            prev += int(entry.split(':')[1])
         average = total / counter
 
         minimx = min(minimx, start)
@@ -41,7 +43,7 @@ def plot_data(file_path):
         maximy = max(maximy, max(values))
 
         plt.plot(values)
-        plt.axis([minimx, maximx, minimy+2000, maximy+1500])
+        plt.axis([minimx, maximx, minimy, maximy])
         plt.ylabel('Time used to Authenticate (microseconds)')
         plt.xlabel('Message Index')
         plt.title('Time Measurement of Authenticating CAN Messages')

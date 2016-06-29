@@ -146,10 +146,10 @@ bool Authenticate()
     }
     message.toLowerCase();
 
-    //Serial.print("Hashing: ");
-    //Serial.println(message);
-    //Serial.print("Key: ");
-    //Serial.println((const char *)key);
+    Serial.print("Hashing: ");
+    Serial.println(message);
+    Serial.print("Key: ");
+    Serial.println((const char *)key);
     Sha1.initHmac(key, keyLen);
     WriteBytes((const uint8_t *)message.c_str(), message.length());
     uint8_t *correct_hash;
@@ -163,16 +163,16 @@ bool Authenticate()
 
     // Read in the three sections of the digest and check them
     CAN.readMsgBuf(&len, msg1);
-    //PrintMessage(id, len, &msg1[0]);
-    if (!CompareAuthMessage(msg1, 8, 0)) return false;
+    PrintMessage(id, len, &msg1[0]);
+    if (!CompareAuthMessage(msg1, 8, 0)) Serial.println("MSG1 fail");
     
     CAN.readMsgBuf(&len, msg3);
-    //PrintMessage(id, len, &msg3[0]);
-    if (!CompareAuthMessage(msg3, 4, 16)) return false;
+    PrintMessage(id, len, &msg3[0]);
+    if (!CompareAuthMessage(msg3, 4, 16)) Serial.println("MSG3 fail");
     
     CAN.readMsgBuf(&len, msg2);
-    //PrintMessage(id, len, &msg2[0]);
-    if (!CompareAuthMessage(msg2, 8, 8)) return false;
+    PrintMessage(id, len, &msg2[0]);
+    if (!CompareAuthMessage(msg2, 8, 8)) Serial.println("MSG2 fail");
 
     Serial.print("Received Correct Digest: ");
     PrintHash(hash);

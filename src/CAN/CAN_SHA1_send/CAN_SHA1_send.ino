@@ -161,8 +161,20 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     const uint8_t *theKey;
     theKey = GetKey(id);
     int keyLen = GetKeyLen(id);
+    String message = "";
+    for(int i = 0; i < dlc; i++)
+    {
+        if (buf[i] < 0x10)
+            message += '0';
+        message += String(buf[i], HEX);
+    }
+    message.toLowerCase();
+    Serial.print("Hashing: ");
+    Serial.println(message);
+    Serial.print("Key: ");
+    Serial.println((const char *)theKey);
     Sha1.initHmac(theKey, keyLen);
-    WriteBytes((const uint8_t *)buf, dlc);
+    WriteBytes((const uint8_t *)message.c_str(), message.length());
     hash = Sha1.resultHmac();
 
     // Create the 3 auth messages
@@ -175,7 +187,7 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
 
     // Fill msg3 last 4 bytes with timestamp
-    //StampTime(&msg3[4]);
+    StampTime(&msg3[4]);
 
     // Send the auth messages
     CAN.sendMsgBuf(id, 0, 8, msg1);

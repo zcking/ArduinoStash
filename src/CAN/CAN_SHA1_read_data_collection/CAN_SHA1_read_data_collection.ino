@@ -41,13 +41,29 @@ uint8_t dlc;
 uint8_t data[8] = {0};
 uint8_t *hash;
 
+// For timestamp verification 
+unsigned long mil_timestamp = 0;
+unsigned long door_timestamp = 0;
+unsigned long engine_timestamp = 0;
+const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
+
+// For data collection - quantity of messages received
+unsigned long numReceived = 0;
+int timer = 0;
+int oldTime = 0; 
+int sec = 0;
+int counter = 0;
+
+const bool MEASURE_RECEIVED_BYTES = false;
+const bool MEASURE_TIME_TO_AUTH = false;
+
 MCP_CAN CAN(SPI_CS_PIN);
 
 void setup()
 {
     Serial.begin(115200);
 
-    while (CAN_OK != CAN.begin(CAN_1000KBPS))
+    while (CAN_OK != CAN.begin(CAN_500KBPS))
     {
         Serial.println("CAN BUS Shield init fail");
         Serial.println(" Init CAN BUS Shield again");
@@ -68,11 +84,6 @@ void setup()
 }
 
 
-// For data collection - quantity of messages received
-unsigned long numReceived = 0;
-int timer = 0;
-int oldTime = 0; 
-int sec = 0;
 
 void loop()
 {
@@ -83,28 +94,41 @@ void loop()
         CAN.readMsgBufID(&id, &dlc, data); // read buffer
 
         // Increment counter
-        numReceived++;
-        timer = second(now());
-        if (timer > oldTime)
+        if (MEASURE_RECEIVED_BYTES)
         {
-            oldTime = timer;
-            sec++; // current second
-            Serial.print(sec);
-            Serial.print(":");
-            Serial.println(numReceived);
-            numReceived = 0;
+            numReceived++;
+            timer = second(now());
+            if (false && timer > oldTime)
+            {
+                oldTime = timer;
+                sec++; // current second
+                Serial.print(sec);
+                Serial.print(":");
+                Serial.println(numReceived);
+                numReceived = 0;
+            }
         }
 
         // Authenticate the message
-        //if (Authenticate())
-        //{
-            // Display the message
-            //PrintMessage();
+        unsigned long start = micros();
+        bool good = Authenticate();
+        if (Authenticate())
+        {
+             // Display the message
+            PrintMessage();
 
-            //Serial.println("\nAuthentication Successful");
-            //TakeAction();
-            //Serial.println("------------------------------------------\n");
-        //}
+            Serial.println("\nAuthentication Successful");
+            TakeAction();
+            Serial.println("------------------------------------------\n");
+        }
+        unsigned long delta = micros() - start;
+        counter++;
+        if (MEASURE_TIME_TO_AUTH)
+        {
+            Serial.print(counter);
+            Serial.print(':');
+            Serial.println(delta);
+        }
     }
 }
 
@@ -170,11 +194,14 @@ bool Authenticate()
     WriteBytes((const uint8_t *)message.c_str(), message.length());
     uint8_t *correct_hash;
     hash = Sha1.resultHmac();
+//    Serial.print("Expected Digest: ");
+//    PrintHash(hash);
 
     // For storing incoming digest
     uint8_t msg1[8] = {0};
     uint8_t msg2[8] = {0};
     uint8_t msg3[8] = {0};
+    uint8_t rec_hash[20] = {0};
     uint8_t len;
 
     // Read in the three sections of the digest and check them
@@ -189,9 +216,19 @@ bool Authenticate()
     CAN.readMsgBuf(&len, msg2);
     //PrintMessage(id, len, &msg2[0]);
     if (!CompareAuthMessage(msg2, 8, 8)) return false;
+//    Serial.print("Received Digest: ");
+//    for(int i = 0; i < 8; i++)
+//    {
+//        rec_hash[i] = msg1[i];
+//        rec_hash[i+8] = msg2[i];
+//        if (i < 4)
+//            rec_hash[i+16] = msg3[i];
+//    }
+//    PrintHash(&rec_hash[0]);
+//    Serial.println();
 
-    //Serial.print("Received Correct Digest: ");
-    //PrintHash(hash);
+    Serial.print("Received Correct Digest: ");
+    PrintHash(hash);
     return true;
 }
 

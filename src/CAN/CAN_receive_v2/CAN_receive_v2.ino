@@ -84,7 +84,7 @@ void loop()
     {
         id = CAN.getCanId(); // get CAN ID
         CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
-//        Serial.println("\n------------------------------\n");
+        Serial.println("\n------------------------------\n");
 
         // Increment counter
         numReceived++;
@@ -103,9 +103,9 @@ void loop()
         if (Authenticate())
         {
           // Display the message
-//          PrintMessage(); 
+          PrintMessage(); 
           
-//          Serial.println("\nAUTHENTICATION SUCCESSFUL");
+          Serial.println("\nAUTHENTICATION SUCCESSFUL");
           TakeAction();     // only respond to authorized messages
         }
     }
@@ -202,13 +202,13 @@ bool Authenticate()
     uint8_t keyLen;
     GetKey(id, &key[0], keyLen);
 
-//    Serial.print("Expected Key: ");
-//    for(int i = 0; i < keyLen; i++)
-//    {
-//        Serial.print(key[i]);
-//        Serial.print(" ");
-//    }
-//    Serial.println();
+    Serial.print("Expected Key: ");
+    for(int i = 0; i < keyLen; i++)
+    {
+        Serial.print(key[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
 
     // Generate the correct hash according to the data
     spritz_mac(&correct_hash[0], HASH_LEN, &data[0], dlc, &key[0], keyLen);
@@ -221,7 +221,7 @@ bool Authenticate()
     // Verify the timestamp/freqency
     if (!VerifyTimestamp(&msg2[4]))
     {
-        //Serial.println("Failed Frequency Check");
+//        Serial.println("Failed Frequency Check");
         return false;
     }
 
@@ -235,23 +235,23 @@ bool Authenticate()
     }
 
     // Print the incoming_hash
-//    Serial.print("Received Hash: ");
-//    for (int i = 0; i < HASH_LEN; i++)
-//    {
-//        if (incoming_hash[i] < 0x10)
-//          Serial.print('0');
-//        Serial.print(incoming_hash[i], HEX);
-//        Serial.print(' ');
-//    }
-//    Serial.print("\nExpected Hash: ");
-//    for(int i = 0; i < HASH_LEN; i++)
-//    {
-//      if (correct_hash[i] < 0x10)
-//        Serial.print('0');
-//      Serial.print(correct_hash[i], HEX);
-//      Serial.print(' ');
-//    }
-//    Serial.println();
+    Serial.print("Received Hash: ");
+    for (int i = 0; i < HASH_LEN; i++)
+    {
+        if (incoming_hash[i] < 0x10)
+          Serial.print('0');
+        Serial.print(incoming_hash[i], HEX);
+        Serial.print(' ');
+    }
+    Serial.print("\nExpected Hash: ");
+    for(int i = 0; i < HASH_LEN; i++)
+    {
+      if (correct_hash[i] < 0x10)
+        Serial.print('0');
+      Serial.print(correct_hash[i], HEX);
+      Serial.print(' ');
+    }
+    Serial.println();
     return (spritz_compare(&correct_hash[0], &incoming_hash[0], HASH_LEN) == 0);
 }
 

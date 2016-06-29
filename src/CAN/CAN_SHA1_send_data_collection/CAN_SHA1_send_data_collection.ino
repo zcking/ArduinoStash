@@ -65,12 +65,12 @@ void loop()
     unsigned long start = micros();
     Sha1.initHmac(key, skey.length());
     WriteBytes((const uint8_t *)sdata.c_str(), sdata.length());
+    hash =  Sha1.resultHmac();
     unsigned long delta = micros() - start;
+    counter++;
     Serial.print(counter);
     Serial.print(':');
     Serial.println(delta);
-    counter++;
-    hash =  Sha1.resultHmac();
 
     // Create the 3 auth messages
     uint8_t msg1[8] = {0};
@@ -83,12 +83,12 @@ void loop()
         if (i < 4)
             msg3[i] = hash[i+16];
     }
-
+    
     // Send the messages
-      CAN.sendMsgBuf(id, 0, dlc, data);
-//    CAN.sendMsgBuf(id, 0, 8, msg1);
-//    CAN.sendMsgBuf(id, 0, 8, msg2);
-//    CAN.sendMsgBuf(id, 0, 8, msg3);
+    CAN.sendMsgBuf(id, 0, dlc, data);
+    CAN.sendMsgBuf(id, 0, 8, msg1);
+    CAN.sendMsgBuf(id, 0, 8, msg2);
+    CAN.sendMsgBuf(id, 0, 8, msg3);
 
     // Increment counter
     numReceived++;

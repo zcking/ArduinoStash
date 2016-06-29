@@ -38,6 +38,9 @@ int timer = 0;
 int oldTime = 0;
 int sec = 0;
 
+const bool MEASURE_RECEIVED_BYTES = false;
+const bool MEASURE_TIME_TO_AUTH = false;
+
 void setup()
 {
     InitMessages();
@@ -71,19 +74,22 @@ void loop()
         CAN.readMsgBufID(&id, &dlc, data);    // read data,  len: data length, buf: data buf        
 
         // Increment counter
-        numReceived++;
-        timer = second(now());
-        if (timer > oldTime)
+        if (MEASURE_RECEIVED_BYTES)
         {
-            oldTime = timer;
-            sec++; // current second
-            Serial.print(sec);
-            Serial.print(":");
-            Serial.println(numReceived);
-            numReceived = 0;
+            numReceived++;
+            timer = second(now());
+            if (timer > oldTime)
+            {
+                oldTime = timer;
+                sec++; // current second
+                Serial.print(sec);
+                Serial.print(":");
+                Serial.println(numReceived);
+                numReceived = 0;
+            }
         }
         
-        //PrintMessage();
+        PrintMessage();
         TakeAction();
     }
 }

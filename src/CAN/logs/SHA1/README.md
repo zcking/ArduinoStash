@@ -35,10 +35,14 @@ with different delay values to see if they yield different results.
 
 ---
 
-### Time Measurement of Authentication
+### Time Measurement to Write HMAC Data
 The average time it took to write the HMAC data (not actually created the HMAC), 
 was 3973.04 microseconds, or 3.97304 milliseconds.  
 
 ### Time Measurement to Create Full Authentication Messages   
 The complete time it took to create the HMAC and timestamp authentication 
-messages was 15,443.0204 microseconds, or 15.44302 milliseconds.
+messages was 15,443.0204 microseconds, or 15.44302 milliseconds.  
+
+### Time Measurement to Authenticate a Message  
+The complete time it took to authenticate the HMAC and verify 
+the timestamp freshness is 

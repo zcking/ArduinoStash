@@ -85,7 +85,7 @@ void loop()
         // Send the original message, followed
         // by the authentication messages
         CAN.sendMsgBuf(id, 0, dlc, stmp);
-        SendAuthMessages(id, dlc, stmp);
+        //SendAuthMessages(id, dlc, stmp);
     
         // Display Message on Serial interface
         PrintMessage(id, dlc, &stmp[0]);

@@ -57,14 +57,8 @@ of the time measurement to create the full authentication messages (below).
 ![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-01.png)  
 
 
-### Time Measurement to Create Full Authentication Messages   
+### Time Measurement to Fully Sign and Send Authentication Messages
 The complete time it took to create the HMAC and timestamp authentication
-messages was 15,443.0204 microseconds, or 15.44302 milliseconds.  
+messages, as well as send them was 15,443.0204 microseconds, or 15.44302 milliseconds.  
 
 ![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-02.png)  
-
-### Time Measurement to Authenticate a Message  
-The complete time it took to authenticate the HMAC and verify
-the timestamp freshness is 34,982.2222 microseconds, or 34.9822 milliseconds.  
-
-![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-03.png)  

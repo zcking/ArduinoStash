@@ -36,13 +36,13 @@ Bus shields were initialized to communicate at *up to* 500 Kbits/s.
 
 ### Percent Decrease in Average Bytes Received Per Second:
 #### Log |  Percent Decrease
-1. 6.7484%  
-2. 7.4634%  
-**Total Average:** 7.1059%  
+1. 13.41%  
+2. 14.91%  
+**Total Average:** 14.61%  
 
 Thus, we can infer that, given a real CAN Bus running at 500 kbit/s, 
-the security measures proposed would only degrade the network speed to ~464.5 kbit/s. 
-And one running at 1 Mbit/s would theoretically degrade to ~951.2 kbit/s. Of course, these 
+the security measures proposed would slow the network speed to ~427 kbit/s. 
+And one running at 1 Mbit/s would theoretically slow to ~874 kbit/s. Of course, these 
 values still might be altered by the specific hardware used on nodes in the CAN Bus.  
 
 ---

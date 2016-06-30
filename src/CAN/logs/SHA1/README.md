@@ -8,6 +8,13 @@ send the CAN messages and flush any ouput streams. Without
 the delay, the Arduinos' buffers can overflow. I might also experiment
 with different delay values to see if they yield different results.  
 
+**Note:** these values are driven by the Arduino Genuino/Uno  board, and
+may vary with different CPUs. Thus the "normal" values shown here should not 
+be compared directly to that of a real CAN Bus within an automobile. Rather, 
+this data is focused towards a percentage decrease and then applied theoretically 
+towards an actual CAN Bus found in automobiles and other contexts. Also, the CAN 
+Bus shields were initialized to communicate at *up to* 500 Kbits/s.  
+
 ---
 
 ### Control Group
@@ -29,9 +36,14 @@ with different delay values to see if they yield different results.
 
 ### Percent Decrease in Average Bytes Received Per Second:
 #### Log |  Percent Decrease
-1. 6.7484 %  
-2. 7.4634 %  
-**Total Average:** 7.1059 %
+1. 6.7484%  
+2. 7.4634%  
+**Total Average:** 7.1059%  
+
+Thus, we can infer that, given a real CAN Bus running at 500 kbit/s, 
+the security measures proposed would only degrade the network speed to ~464.5 kbit/s. 
+And one running at 1 Mbit/s would theoretically degrade to ~951.2 kbit/s. Of course, these 
+values still might be altered by the specific hardware used on nodes in the CAN Bus.  
 
 ---
 
@@ -44,7 +56,10 @@ with different delay values to see if they yield different results.
 
 
 **Note:** these values are driven by the Arduino Genuino/Uno  board, and
-may vary with different CPUs.  
+may vary with different CPUs. Thus the "normal" values shown here should not 
+be compared directly to that of a real CAN Bus within an automobile. Rather, 
+this data is focused towards a percentage decrease and then applied theoretically 
+towards an actual CAN Bus found in automobiles and other contexts.  
 
 ### Time Measurement to Update SHA-1 Hash
 The average time it took to update the SHA-1 hash (not actually created the HMAC),

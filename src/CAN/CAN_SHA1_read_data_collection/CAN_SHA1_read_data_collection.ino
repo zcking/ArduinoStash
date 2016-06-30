@@ -55,7 +55,7 @@ int sec = 0;
 int counter = 0;
 
 const bool MEASURE_RECEIVED_BYTES = false;
-const bool MEASURE_TIME_TO_AUTH = true;
+const bool MEASURE_TIME_TO_AUTH = false;
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -112,14 +112,14 @@ void loop()
         // Authenticate the message
         unsigned long start = micros();
         bool good = Authenticate();
-        if (false && Authenticate())
+        if (Authenticate())
         {
              // Display the message
-//            PrintMessage();
+            PrintMessage();
 
-//            Serial.println("\nAuthentication Successful");
-//            TakeAction();
-//            Serial.println("------------------------------------------\n");
+            Serial.println("\nAuthentication Successful");
+            TakeAction();
+            Serial.println("------------------------------------------\n");
         }
         unsigned long delta = micros() - start;
         counter++;
@@ -224,8 +224,8 @@ bool Authenticate()
         return false;
     }
 
-//    Serial.print("Received Correct Digest: ");
-//    PrintHash(hash);
+    Serial.print("Received Correct Digest: ");
+    PrintHash(hash);
     return true;
 }
 

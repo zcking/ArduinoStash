@@ -49,7 +49,7 @@ values still might be altered by the specific hardware used on nodes in the CAN 
 
 ### Control v. Experimental Comparison  
 
-#### Log #1 Comparison
+#### Log #2 Comparison
 ![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/both-01.png)  
 
 ---
@@ -63,6 +63,6 @@ towards an actual CAN Bus found in automobiles and other contexts.
 
 ### Time Measurement to Fully Sign and Send Authentication Messages
 The complete time it took to create the HMAC and timestamp authentication
-messages, as well as send them was 1,543.673 microseconds, or 1.543673 milliseconds.  
+messages, as well as send them was 1,513.673 microseconds, or 1.513673 milliseconds.  
 
 ![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-02.png)  

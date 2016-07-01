@@ -21,7 +21,7 @@ Bus shields were initialized to communicate at *up to* 500 Kbits/s.
 
 #### Log |  Average Bytes Received Per Second
 1. 79.84
-2. 79.84
+2. 79.84  
 **Total Average:** 79.84
 
 ---
@@ -29,7 +29,7 @@ Bus shields were initialized to communicate at *up to* 500 Kbits/s.
 ### Experimental Group
 #### Log |  Average Bytes Received Per Second
 1. 75.92
-2. 76.24
+2. 76.24  
 **Total Average:** 76.08
 
 ---
@@ -37,7 +37,7 @@ Bus shields were initialized to communicate at *up to* 500 Kbits/s.
 ### Percent Decrease in Average Bytes Received Per Second:
 #### Log |  Percent Decrease
 1. 4.91%  
-2. 4.51%  
+2. 4.51%   
 **Total Average:** 4.71%
 
 Thus, we can infer that, given a real CAN Bus running at 500 kbit/s, 

@@ -9,10 +9,10 @@ the delay, the Arduinos' buffers can overflow. I might also experiment
 with different delay values to see if they yield different results.  
 
 **Note:** these values are driven by the Arduino Genuino/Uno  board, and
-may vary with different CPUs. Thus the "normal" values shown here should not 
-be compared directly to that of a real CAN Bus within an automobile. Rather, 
-this data is focused towards a percentage decrease and then applied theoretically 
-towards an actual CAN Bus found in automobiles and other contexts. Also, the CAN 
+may vary with different CPUs. Thus the "normal" values shown here should not
+be compared directly to that of a real CAN Bus within an automobile. Rather,
+this data is focused towards a percentage decrease and then applied theoretically
+towards an actual CAN Bus found in automobiles and other contexts. Also, the CAN
 Bus shields were initialized to communicate at *up to* 500 Kbits/s.  
 
 ---
@@ -40,9 +40,9 @@ Bus shields were initialized to communicate at *up to* 500 Kbits/s.
 2. 4.51%   
 **Total Average:** 4.71%
 
-Thus, we can infer that, given a real CAN Bus running at 500 kbit/s, 
-the security measures proposed would slow the network speed to ~476.45 kbit/s. 
-And one running at 1 Mbit/s would theoretically slow to ~975.77 kbit/s. Of course, these 
+Thus, we can infer that, given a real CAN Bus running at 500 kbit/s,
+the security measures proposed would slow the network speed to ~476.45 kbit/s.
+And one running at 1 Mbit/s would theoretically slow to ~975.77 kbit/s. Of course, these
 values still might be altered by the specific hardware used on nodes in the CAN Bus.  
 
 ---
@@ -56,9 +56,9 @@ values still might be altered by the specific hardware used on nodes in the CAN 
 
 
 **Note:** these values are driven by the Arduino Genuino/Uno  board, and
-may vary with different CPUs. Thus the "normal" values shown here should not 
-be compared directly to that of a real CAN Bus within an automobile. Rather, 
-this data is focused towards a percentage decrease and then applied theoretically 
+may vary with different CPUs. Thus the "normal" values shown here should not
+be compared directly to that of a real CAN Bus within an automobile. Rather,
+this data is focused towards a percentage decrease and then applied theoretically
 towards an actual CAN Bus found in automobiles and other contexts.  
 
 ### Time Measurement to Fully Sign and Send Authentication Messages
@@ -75,4 +75,4 @@ messages, as well as send them was 1,513.673 microseconds, or 1.513673 milliseco
 Without security measures--that is, CAN's normal state, an attempted DoS attack will succeed 100% of the time. However, with the security features I implemented, the success rate dropped to _____.  
 
 ### Replay Attack
-In the same manner as the DoS attack, an attempted replay attack will succeed 100% of the time with CAN as-is. However, with the security features I implemented, success rate drops relative to the set "freshness" factor. This is a value, *t* set such that a CAN message with a given frame ID, *f_i* must contain a timestamp greater than *lastTimestamp + t*, where *lastTimestamp* is the stored history value on the ECU for the last received timestamp for that frame ID. Thus, the success rate with this security becomes ![replay attack success rate equation](../../formulas/replay-attack-formula-1.png), where *N_i* is the total number of CAN frames sent for the *ith* frame ID. 
+In the same manner as the DoS attack, an attempted replay attack will succeed 100% of the time with CAN as-is. However, with the security features I implemented, success rate drops relative to the set "freshness" factor. This is a value, *t* set such that a CAN message with a given frame ID, *f_i* must contain a timestamp greater than *lastTimestamp + t*, where *lastTimestamp* is the stored history value on the ECU for the last received timestamp for that frame ID. Thus, the success rate with this security becomes <img alt="replay attack success rate equation" src="../../formulas/replay-attack-formula-1.png" width="10%" />, where *N_i* is the total number of CAN frames sent for the *ith* frame ID. 

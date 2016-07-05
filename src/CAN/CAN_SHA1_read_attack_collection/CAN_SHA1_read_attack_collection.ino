@@ -54,12 +54,12 @@ int oldTime = 0;
 int sec = 0;
 int counter = 0;
 int successful = 0;
-int totalReceived = 0, totalSuccessful = 0;
+int unsuccessful = 0;
 
-const bool MEASURE_RECEIVED_BYTES = false;
 const bool MEASURE_TIME_TO_AUTH = false;
-const bool SHOW_NORMAL_OUTPUT = false;
-const bool MEASURE_SUCCESSFUL = true;
+const bool MEASURE_SUCCESSFUL = false;
+const bool MEASURE_UNSUCCESSFUL = false;
+const bool SHOW_NORMAL_OUTPUT = true;
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -69,14 +69,10 @@ void setup()
 
     while (CAN_OK != CAN.begin(CAN_500KBPS))
     {
-        if (SHOW_NORMAL_OUTPUT)
-        {
-            Serial.println("CAN BUS Shield init fail");
-            Serial.println(" Init CAN BUS Shield again");
-        }
+        Serial.println("CAN BUS Shield init fail");
+        Serial.println(" Init CAN BUS Shield again");
     }
-    if (SHOW_NORMAL_OUTPUT)
-        Serial.println("CAN BUS Shield init ok!");
+    Serial.println("CAN BUS Shield init ok!");
 
     // Initialize all the LEDs
     pinMode(blueLED, OUTPUT);
@@ -97,16 +93,47 @@ void loop()
 {
     if (CAN_MSGAVAIL == CAN.checkReceive())   // check if data coming
     {
-        totalReceived++;
-        
         // Store message data
         id = CAN.getCanId(); 
         CAN.readMsgBufID(&id, &dlc, data); // read buffer
 
-        // Increment counter
-        if (MEASURE_RECEIVED_BYTES)
+        // Authenticate the message
+        unsigned long start = micros();
+        bool good = Authenticate();
+        if (Authenticate())
         {
-            numReceived++;
+             // Display the message
+            if (SHOW_NORMAL_OUTPUT)
+            {
+                PrintMessage();
+    
+                Serial.println("\nAuthentication Successful");
+                Serial.println("------------------------------------------\n");
+            }
+            
+            TakeAction();
+        }
+        
+        
+        if (MEASURE_UNSUCCESSFUL && !MEASURE_SUCCESSFUL)
+        {
+            unsuccessful++;
+            timer = second(now());
+            if (timer > oldTime)
+            {
+                oldTime = timer;
+                sec++;
+                Serial.print(sec);
+                Serial.print(':');
+                Serial.println(unsuccessful);
+                unsuccessful = 0;
+            }
+        }
+
+        // Increment counter
+        if (MEASURE_SUCCESSFUL)
+        {
+            successful++;
             timer = second(now());
             if (timer > oldTime)
             {
@@ -114,26 +141,11 @@ void loop()
                 sec++; // current second
                 Serial.print(sec);
                 Serial.print(":");
-                Serial.println(numReceived);
-                numReceived = 0;
+                Serial.println(successful);
+                successful = 0;
             }
-         }
+        } 
 
-        // Authenticate the message
-        unsigned long start = micros();
-        if (Authenticate())
-        {
-            totalSuccessful++;
-            
-             // Display the message
-            if (SHOW_NORMAL_OUTPUT)
-            {
-                PrintMessage();
-                Serial.println("\nAuthentication Successful");
-                Serial.println("------------------------------------------\n");
-            }
-            TakeAction();
-        }
         
         unsigned long delta = micros() - start;
         counter++;
@@ -142,13 +154,6 @@ void loop()
             Serial.print(counter);
             Serial.print(':');
             Serial.println(delta);
-        }
-
-        if (MEASURE_SUCCESSFUL)
-        {
-            Serial.print(totalSuccessful);
-            Serial.print('/');
-            Serial.println(totalReceived);
         }
     }
 }

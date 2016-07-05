@@ -111,7 +111,6 @@ void loop()
 
         // Authenticate the message
         unsigned long start = micros();
-        bool good = Authenticate();
         if (Authenticate())
         {
              // Display the message

@@ -27,6 +27,9 @@ int oldTime = 0;
 int sec = 0;
 int counter = 0;
 
+const bool TEST_DOS_ATTACK = true;
+const bool MEASURE_TIME = false;
+
 MCP_CAN CAN(SPI_CS_PIN);
 
 void setup()
@@ -48,7 +51,7 @@ void loop()
     String skey = "engine key";
 
     // Parse and convert them 
-    uint32_t id = 0x7a0;
+    uint32_t id = 0;
     uint8_t dlc = 2;
     String sdata = message.substring(2, 2+(dlc*2));
     uint8_t *data = new uint8_t[8];
@@ -66,10 +69,13 @@ void loop()
     hash =  Sha1.resultHmac();
     unsigned long delta = micros() - start;
     counter++;
-    Serial.print(counter);
-    Serial.print(':');
-    Serial.println(delta);
-
+    if (MEASURE_TIME)
+    {
+        Serial.print(counter);
+        Serial.print(':');
+        Serial.println(delta);
+    }
+    
     // Create the 3 auth messages
     uint8_t msg1[8] = {0};
     uint8_t msg2[8] = {0};

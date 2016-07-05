@@ -66,3 +66,13 @@ The complete time it took to create the HMAC and timestamp authentication
 messages, as well as send them was 1,513.673 microseconds, or 1.513673 milliseconds.  
 
 ![alt tag](https://raw.githubusercontent.com/zach-king/ArduinoStash/master/src/CAN/figures/SHA1/time-measurement-02.png)  
+
+---
+
+## Measured Probability of Successful Attacks
+
+### Denial of Service (DoS) Attack  
+Without security measures--that is, CAN's normal state, an attempted DoS attack will succeed 100% of the time. However, with the security features I implemented, the success rate dropped to _____.  
+
+### Replay Attack
+In the same manner as the DoS attack, an attempted replay attack will succeed 100% of the time with CAN as-is. However, with the security features I implemented, success rate drops relative to the set "freshness" factor. This is a value, $$t$$ set such that a CAN message with a given frame ID, $$f_i$$ must contain a timestamp greater than $$lastTimestamp + t$$, where $$lastTimestamp$$ is the stored history value on the ECU for the last received timestamp for that frame ID. Thus, the success rate with this security becomes $$N_i / t_i$$, where $$N_i$$ is the total number of CAN frames sent for the $$ith$$ frame ID. 

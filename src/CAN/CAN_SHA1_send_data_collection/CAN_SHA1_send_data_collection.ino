@@ -27,7 +27,7 @@ int oldTime = 0;
 int sec = 0;
 int counter = 0;
 
-const bool TEST_DOS_ATTACK = true;
+const bool TEST_DOS_ATTACK = false;
 const bool MEASURE_TIME = false;
 
 MCP_CAN CAN(SPI_CS_PIN);

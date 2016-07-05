@@ -57,9 +57,9 @@ int successful = 0;
 int unsuccessful = 0;
 
 const bool MEASURE_TIME_TO_AUTH = false;
-const bool MEASURE_SUCCESSFUL = false;
+const bool MEASURE_SUCCESSFUL = true;
 const bool MEASURE_UNSUCCESSFUL = false;
-const bool SHOW_NORMAL_OUTPUT = true;
+const bool SHOW_NORMAL_OUTPUT = false;
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -99,7 +99,7 @@ void loop()
 
         // Authenticate the message
         unsigned long start = micros();
-        bool good = Authenticate();
+        Authenticate();
         if (Authenticate())
         {
              // Display the message

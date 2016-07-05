@@ -121,6 +121,7 @@ void loop()
 
         // Authenticate the message
         unsigned long start = micros();
+        ClearCANBuffer();
         if (Authenticate())
         {
             totalSuccessful++;
@@ -133,6 +134,14 @@ void loop()
                 Serial.println("------------------------------------------\n");
             }
             TakeAction();
+        }
+        else
+        {
+            if (SHOW_NORMAL_OUTPUT)
+            {
+                Serial.println("\nAuthentication FAILED");
+                Serial.println("------------------------------------------\n");
+            }
         }
         
         unsigned long delta = micros() - start;
@@ -153,6 +162,11 @@ void loop()
     }
 }
 
+
+void ClearCANBuffer()
+{
+    Authenticate();
+}
 
 const uint8_t * GetKey()
 {

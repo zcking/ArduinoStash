@@ -22,6 +22,7 @@ const int ENGINE_ID = 0x7a0;
 const bool TEST_DOS_ATTACK = false;
 const bool TEST_FREQUENCY_ATTACK = false;
 const bool USE_CORRECT_KEY = true;
+const int DELAY_TIME = 1; // milliseconds delay (default 100 or 1000)
 
 
 // Variables
@@ -102,7 +103,7 @@ void loop()
 
     // Flush the serial buffer
     Serial.flush();
-    delay(1000);    // delay to actually be able to see serial output
+    delay(DELAY_TIME);    // delay to actually be able to see serial output
 }
 
 

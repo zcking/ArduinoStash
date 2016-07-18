@@ -4,6 +4,12 @@
 #include <SPI.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <Stepper.h>
+
+
+#define STEPS 60 // number of steps per revolution of Internal shaft
+int stepsToTake; // 2048 = 1 revolution
+Stepper engine(STEPS, 8, 10, 9, 11); // simulate engine (stepper motor)
 
 const int HASH_LEN = 20;
 
@@ -89,6 +95,7 @@ void setup()
     digitalWrite(RED, LOW);
     digitalWrite(BLUE, LOW);
     digitalWrite(GREEN, LOW);
+    engine.setSpeed(100);
 }
 
 
@@ -160,6 +167,8 @@ void loop()
             Serial.println(totalReceived);
         }
     }
+
+    engine.step(1);
 }
 
 
@@ -417,6 +426,7 @@ void TakeAction()
         analogWrite(RED, redValue);
         analogWrite(GREEN, greenValue);
         analogWrite(BLUE, blueValue);
+        engine.setSpeed((redValue * 100) % 700);
     }
 }
 

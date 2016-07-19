@@ -1,6 +1,18 @@
 #include "sha1.h"
 #include <mcp_can.h>
 #include <SPI.h>
+#include <OnewireKeypad.h>
+//#include <Password.h>
+
+// For keypad
+char Keys[] = {
+  '4','3','2','1',
+  '5','6','7','8',
+  '9','A','B','C',
+  'D','E','#','*'
+};
+
+OnewireKeypad <Print, 16> KP(Serial, Keys, 4, 4, A0, 5000, 1000);
 
 // CONSTANTS
 const int SPI_CS_PIN = 9;
@@ -13,6 +25,17 @@ const int ENGINE_KEY_LEN = 10;
 const int MIL_ID = 0x7e0;
 const int DOOR_ID = 0x7d0;
 const int ENGINE_ID = 0x7a0;
+
+// Preset CAN messages (for IR remote)
+typedef enum {
+  LOCK_DOORS,
+  UNLOCK_DOORS,
+  MIL_ON,
+  MIL_OFF,
+  ENGINE_GREEN,
+  ENGINE_RED,
+  ENGINE_BLUE
+} presetCANMessage;
 
 
 // Variables
@@ -37,12 +60,17 @@ void setup()
         Serial.println(" Init CAN BUS Shield again");
     }
     Serial.println("CAN BUS Shield init ok!");
+
+    KP.SetHoldTime(1000);
 }
 
 
 
 void loop()
 {
+    char Key;
+    byte KState = KP.Key_State();
+    
     // If user inputted data via serial interface...
     if (Serial.available())
     {
@@ -73,7 +101,25 @@ void loop()
         // Print the original message to serial interface
         PrintMessage(id, dlc, &data[0]);
     }
-    else
+    else if (KState == PRESSED)
+    {
+        if (Key = KP.Getkey())
+        {
+            Serial << "Pressed: " << Key << "\n";
+            switch(Key)
+            {
+                case 'C':
+                  SendPresetMessage(UNLOCK_DOORS);
+                  break;
+                case '*':
+                  SendPresetMessage(LOCK_DOORS);
+                  break;
+                default:
+                  break;
+            }
+        }
+    }
+    else if (false)
     {
         // Otherwise, if the user didn't input a message, 
         // generate a random, valid CAN message
@@ -324,6 +370,62 @@ void GenerateMessage(uint32_t &id, uint8_t &dlc, unsigned char *data)
 }
 
 
+
+// Take a 'presetCANMessage' and
+// send the appropriate message
+void SendPresetMessage(presetCANMessage msg)
+{
+    uint32_t id;
+    uint8_t dlc;
+    uint8_t* data = new uint8_t[8];
+
+    switch(msg)
+    {
+        case LOCK_DOORS:
+          id = DOOR_ID;
+          dlc = 1;
+          data[0] = 1;
+          break;
+        case UNLOCK_DOORS:
+          id = DOOR_ID;
+          dlc = 1;
+          data[0] = 0;
+          break;
+        case MIL_ON:
+          id = MIL_ID;
+          dlc = 1;
+          data[0] = 1;
+          break;
+        case MIL_OFF:
+          id = MIL_ID;
+          dlc = 1;
+          data[0] = 0;
+          break;
+        case ENGINE_GREEN:
+          id = ENGINE_ID;
+          dlc = 2;
+          data[0] = 0x10;
+          data[1] = 0x10;
+          break;
+        case ENGINE_RED:
+          break;
+        case ENGINE_BLUE:
+          break;
+        default:
+          break;
+    }
+
+    // Send the message
+    CAN.sendMsgBuf(id, 0, dlc, data);
+    SendAuthMessages(id, dlc, data);
+    
+    // Display Message on Serial interface
+    PrintMessage(id, dlc, &data[0]);
+}
+
+
+
+
 //----------------------------------------------------------------------------
 // Takes an integer and returns a valid CAN frame ID.
 // If selector is invalid, returns -1.
@@ -445,6 +547,3 @@ uint8_t CharByteToUInt8(char ch1, char ch2)
     value += CharToUInt8(ch2);
     return value;
 }
-
-
-

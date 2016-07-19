@@ -4,6 +4,13 @@
 #include <SPI.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <CustomStepper.h>
+
+
+CustomStepper engine(8, 9, 10, 11);
+bool rotate1 = false;
+bool rotatedeg = false;
+bool crotate = false;
 
 const int HASH_LEN = 20;
 
@@ -89,6 +96,8 @@ void setup()
     digitalWrite(RED, LOW);
     digitalWrite(BLUE, LOW);
     digitalWrite(GREEN, LOW);
+    engine.setRPM(12);
+    engine.setSPR(4075.7728395);
 }
 
 
@@ -159,6 +168,14 @@ void loop()
             Serial.print('/');
             Serial.println(totalReceived);
         }
+    }
+
+
+    // Engine control
+    if (engine.isDone() && rotate1 == false)
+    {
+        engine.rotate(); // rotate forever
+        rotate1 = true;
     }
 }
 
@@ -504,3 +521,6 @@ uint8_t CharByteToUInt8(char ch1, char ch2)
     value += CharToUInt8(ch2);
     return value;
 }
+
+
+

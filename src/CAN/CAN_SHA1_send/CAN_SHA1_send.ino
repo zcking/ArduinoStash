@@ -7,8 +7,8 @@
 // For keypad
 char Keys[] = {
   '4','3','2','1',
-  '5','6','7','8',
-  '9','A','B','C',
+  '8','7','6','5',
+  'C','B','A','9',
   'D','E','#','*'
 };
 
@@ -25,6 +25,8 @@ const int ENGINE_KEY_LEN = 10;
 const int MIL_ID = 0x7e0;
 const int DOOR_ID = 0x7d0;
 const int ENGINE_ID = 0x7a0;
+bool SHOULD_GENERATE_MESSAGES = false;
+const int DELAY_TIME = 100; // milliseconds
 
 // Preset CAN messages (for IR remote)
 typedef enum {
@@ -108,18 +110,36 @@ void loop()
             Serial << "Pressed: " << Key << "\n";
             switch(Key)
             {
-                case 'C':
+                case '1':
                   SendPresetMessage(UNLOCK_DOORS);
                   break;
-                case '*':
+                case '2':
                   SendPresetMessage(LOCK_DOORS);
+                  break;
+                case '3':
+                  SendPresetMessage(MIL_ON);
+                  break;
+                case '4':
+                  SendPresetMessage(MIL_OFF);
+                  break;
+                case '5':
+                  SendPresetMessage(ENGINE_GREEN);
+                  break;
+                case '6':
+                  SendPresetMessage(ENGINE_RED);
+                  break;
+                case '7':
+                  SendPresetMessage(ENGINE_BLUE);
+                  break;
+                case '*':
+                  SHOULD_GENERATE_MESSAGES = !SHOULD_GENERATE_MESSAGES;
                   break;
                 default:
                   break;
             }
         }
     }
-    else if (false)
+    else if (SHOULD_GENERATE_MESSAGES)
     {
         // Otherwise, if the user didn't input a message, 
         // generate a random, valid CAN message
@@ -139,7 +159,8 @@ void loop()
 
     // Flush the serial buffer
     Serial.flush();
-    delay(1000);    // delay to actually be able to see serial output
+    if (SHOULD_GENERATE_MESSAGES)
+      delay(DELAY_TIME);    // delay to actually be able to see serial output
 }
 
 
@@ -403,13 +424,24 @@ void SendPresetMessage(presetCANMessage msg)
           break;
         case ENGINE_GREEN:
           id = ENGINE_ID;
-          dlc = 2;
+          dlc = 3;
           data[0] = 0x10;
-          data[1] = 0x10;
+          data[1] = 0xF0;
+          data[2] = 0x10;
           break;
         case ENGINE_RED:
+          id = ENGINE_ID;
+          dlc = 3;
+          data[0] = 0xB0;
+          data[1] = 0x00;
+          data[2] = 0x00;
           break;
         case ENGINE_BLUE:
+          id = ENGINE_ID;
+          dlc = 3;
+          data[0] = 0x10;
+          data[1] = 0x10;
+          data[2] = 0xF0;
           break;
         default:
           break;

@@ -1,6 +1,6 @@
 #include "IRremote.h"
 
-const int ledPin = 7; // digital output LED pin
+const int ledPin = 3; // digital output LED pin
 const int ledPin2 = 4; 
 
 int receiver = 11; // Signal Pin of IR receiver to Arduino Digital Pin 11

@@ -9,7 +9,7 @@ char KEYS[]= {  // Define keys values of Keypad
 };
 
 OnewireKeypad <Print, 16> KP(Serial, KEYS, 4, 4, A0, 5000, 1000 );
-Password password = Password( "1234" );
+Password password = Password( "8765" );
 
 void setup ()
 {

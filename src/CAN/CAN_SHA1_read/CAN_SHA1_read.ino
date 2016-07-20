@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 const int HASH_LEN = 20;
 
 // "Control Units" -- LED Lights to be controlled

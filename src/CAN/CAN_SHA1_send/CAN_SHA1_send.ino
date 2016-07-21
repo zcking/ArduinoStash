@@ -36,7 +36,10 @@ typedef enum {
   MIL_OFF,
   ENGINE_GREEN,
   ENGINE_RED,
-  ENGINE_BLUE
+  ENGINE_BLUE,
+  ENGINE_PURPLE,
+  ENGINE_CLEAR,
+  CLEAR_ALL
 } presetCANMessage;
 
 
@@ -131,9 +134,14 @@ void loop()
                 case '7':
                   SendPresetMessage(ENGINE_BLUE);
                   break;
+                case '8':
+                  SendPresetMessage(ENGINE_PURPLE);
+                  break;
                 case '*':
                   SHOULD_GENERATE_MESSAGES = !SHOULD_GENERATE_MESSAGES;
                   break;
+                case '#':
+                  SendPresetMessage(CLEAR_ALL);
                 default:
                   break;
             }
@@ -443,8 +451,29 @@ void SendPresetMessage(presetCANMessage msg)
           data[1] = 0x10;
           data[2] = 0xF0;
           break;
-        default:
+        case ENGINE_PURPLE:
+          id = ENGINE_ID;
+          dlc = 3;
+          data[0] = 0xF0;
+          data[1] = 0x21;
+          data[2] = 0xE9;
           break;
+        case ENGINE_CLEAR:
+          id = ENGINE_ID;
+          dlc = 3;
+          data[0] = 0;
+          data[1] = 0;
+          data[2] = 0;
+          break;
+        case CLEAR_ALL:
+          // Clear ALL
+          SendPresetMessage(MIL_OFF);
+          delay(20);
+          SendPresetMessage(UNLOCK_DOORS);
+          delay(30);
+          SendPresetMessage(ENGINE_CLEAR);
+          delay(30);
+          return;
     }
 
     // Send the message

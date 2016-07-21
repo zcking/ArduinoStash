@@ -29,12 +29,15 @@ const int SPI_CS_PIN = 9;
 const uint8_t *MIL_KEY = (const uint8_t *)"mil key";
 const uint8_t *DOOR_KEY = (const uint8_t *)"door key";
 const uint8_t *ENGINE_KEY = (const uint8_t *)"engine key";
+const uint8_t *TOGGLE_AUTH_KEY = (const uint8_t *)"auth key";
 const int MIL_KEY_LEN = 7;
 const int DOOR_KEY_LEN = 8;
 const int ENGINE_KEY_LEN = 10;
+const int TOGGLE_AUTH_KEY_LEN = 8;
 const int MIL_ID = 0x7e0;
 const int DOOR_ID = 0x7d0;
 const int ENGINE_ID = 0x7a0;
+const int TOGGLE_AUTH_ID = 0x700;
 
 // Incoming data variables
 uint32_t id;
@@ -61,6 +64,7 @@ const bool MEASURE_RECEIVED_BYTES = false;
 const bool MEASURE_TIME_TO_AUTH = false;
 const bool SHOW_NORMAL_OUTPUT = true;
 const bool MEASURE_SUCCESSFUL = false;
+bool SHOULD_AUTHENTICATE = true;
 
 MCP_CAN CAN(SPI_CS_PIN);
 
@@ -123,27 +127,38 @@ void loop()
         // Authenticate the message
         unsigned long start = micros();
         ClearCANBuffer();
-        if (Authenticate())
+        if (SHOULD_AUTHENTICATE)
         {
-            totalSuccessful++;
-            
-             // Display the message
+            if (Authenticate())
+            {
+                totalSuccessful++;
+                
+                 // Display the message
+                if (SHOW_NORMAL_OUTPUT)
+                {
+                    PrintMessage();
+                    Serial.println("\nAuthentication Successful");
+                }
+                TakeAction();
+            }
+            else // failed authentication
+            {
+                if (SHOW_NORMAL_OUTPUT)
+                {
+                    Serial.println("\nAuthentication FAILED");
+                }
+            }
+        }
+        else // not doing authentication
+        {
             if (SHOW_NORMAL_OUTPUT)
             {
                 PrintMessage();
-                Serial.println("\nAuthentication Successful");
-                Serial.println("------------------------------------------\n");
             }
             TakeAction();
         }
-        else
-        {
-            if (SHOW_NORMAL_OUTPUT)
-            {
-                Serial.println("\nAuthentication FAILED");
-                Serial.println("------------------------------------------\n");
-            }
-        }
+
+        Serial.println("------------------------------------------\n");
         
         unsigned long delta = micros() - start;
         counter++;
@@ -166,7 +181,8 @@ void loop()
 
 void ClearCANBuffer()
 {
-    Authenticate();
+    if (SHOULD_AUTHENTICATE)
+      Authenticate();
 }
 
 const uint8_t * GetKey()
@@ -179,6 +195,8 @@ const uint8_t * GetKey()
             return DOOR_KEY;
         case ENGINE_ID:
             return ENGINE_KEY;
+        case TOGGLE_AUTH_ID:
+            return TOGGLE_AUTH_KEY;
         default:
             return 0;
     }
@@ -194,6 +212,8 @@ int GetKeyLen()
           return DOOR_KEY_LEN;
         case ENGINE_ID:
           return ENGINE_KEY_LEN;
+        case TOGGLE_AUTH_ID:
+          return TOGGLE_AUTH_KEY_LEN;
         default:
           return -1;
     }
@@ -418,6 +438,15 @@ void TakeAction()
         analogWrite(RED, redValue);
         analogWrite(GREEN, greenValue);
         analogWrite(BLUE, blueValue);
+        break;
+
+      case TOGGLE_AUTH_ID:
+        SHOULD_AUTHENTICATE = !SHOULD_AUTHENTICATE;
+        if (SHOULD_AUTHENTICATE)
+          Serial.println("--- Authentication ENABLED ---");
+        else
+          Serial.println("--- Authentication DISABLED ---");
+        break;
     }
 }
 

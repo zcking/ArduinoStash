@@ -2,7 +2,6 @@
 #include <mcp_can.h>
 #include <SPI.h>
 #include <OnewireKeypad.h>
-//#include <Password.h>
 
 // For keypad
 char Keys[] = {
@@ -19,14 +18,18 @@ const int SPI_CS_PIN = 9;
 const uint8_t *MIL_KEY = (const uint8_t *)"mil key";
 const uint8_t *DOOR_KEY = (const uint8_t *)"door key";
 const uint8_t *ENGINE_KEY = (const uint8_t *)"engine key";
+const uint8_t *TOGGLE_AUTH_KEY = (const uint8_t *)"auth key";
 const int MIL_KEY_LEN = 7;
 const int DOOR_KEY_LEN = 8;
 const int ENGINE_KEY_LEN = 10;
+const int TOGGLE_AUTH_KEY_LEN = 8;
 const int MIL_ID = 0x7e0;
 const int DOOR_ID = 0x7d0;
 const int ENGINE_ID = 0x7a0;
+const int TOGGLE_AUTH_ID = 0x700;
 bool SHOULD_GENERATE_MESSAGES = false;
 const int DELAY_TIME = 100; // milliseconds
+bool SHOULD_AUTHENTICATE = true;
 
 // Preset CAN messages (for IR remote)
 typedef enum {
@@ -39,7 +42,8 @@ typedef enum {
   ENGINE_BLUE,
   ENGINE_PURPLE,
   ENGINE_CLEAR,
-  CLEAR_ALL
+  CLEAR_ALL,
+  TOGGLE_AUTH
 } presetCANMessage;
 
 
@@ -101,7 +105,8 @@ void loop()
         // Send the original message, followed by the 
         // authentication messages
         CAN.sendMsgBuf(id, 0, dlc, data);
-        SendAuthMessagesByKey(id, dlc, data, skey);
+        if (SHOULD_AUTHENTICATE)
+          SendAuthMessagesByKey(id, dlc, data, skey);
 
         // Print the original message to serial interface
         PrintMessage(id, dlc, &data[0]);
@@ -142,6 +147,11 @@ void loop()
                   break;
                 case '#':
                   SendPresetMessage(CLEAR_ALL);
+                  break;
+                case 'E':
+                  SendPresetMessage(TOGGLE_AUTH);
+                  SHOULD_AUTHENTICATE = !SHOULD_AUTHENTICATE;
+                  break;
                 default:
                   break;
             }
@@ -159,7 +169,8 @@ void loop()
         // Send the original message, followed
         // by the authentication messages
         CAN.sendMsgBuf(id, 0, dlc, stmp);
-        SendAuthMessages(id, dlc, stmp);
+        if (SHOULD_AUTHENTICATE)
+          SendAuthMessages(id, dlc, stmp);
     
         // Display Message on Serial interface
         PrintMessage(id, dlc, &stmp[0]);
@@ -353,6 +364,8 @@ const uint8_t * GetKey(uint32_t id)
             return DOOR_KEY;
         case ENGINE_ID:
             return ENGINE_KEY;
+        case TOGGLE_AUTH_ID:
+            return TOGGLE_AUTH_KEY;
         default:
             return 0;
     }
@@ -368,13 +381,15 @@ int GetKeyLen(uint32_t id)
     switch(id)
     {
         case MIL_ID:
-          return MIL_KEY_LEN;
+            return MIL_KEY_LEN;
         case DOOR_ID:
-          return DOOR_KEY_LEN;
+            return DOOR_KEY_LEN;
         case ENGINE_ID:
-          return ENGINE_KEY_LEN;
+            return ENGINE_KEY_LEN;
+        case TOGGLE_AUTH_ID:
+            return TOGGLE_AUTH_KEY_LEN;
         default:
-          return -1;
+            return -1;
     }
 }
 
@@ -465,6 +480,10 @@ void SendPresetMessage(presetCANMessage msg)
           data[1] = 0;
           data[2] = 0;
           break;
+        case TOGGLE_AUTH:
+          id = TOGGLE_AUTH_ID;
+          dlc = 0;
+          break;
         case CLEAR_ALL:
           // Clear ALL
           SendPresetMessage(MIL_OFF);
@@ -478,7 +497,8 @@ void SendPresetMessage(presetCANMessage msg)
 
     // Send the message
     CAN.sendMsgBuf(id, 0, dlc, data);
-    SendAuthMessages(id, dlc, data);
+    if (SHOULD_AUTHENTICATE)
+      SendAuthMessages(id, dlc, data);
     
     // Display Message on Serial interface
     PrintMessage(id, dlc, &data[0]);

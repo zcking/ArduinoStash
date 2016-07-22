@@ -44,12 +44,13 @@ uint32_t id;
 uint8_t dlc;
 uint8_t data[8] = {0};
 uint8_t *hash;
+unsigned long ts;
 
 // For timestamp verification 
 unsigned long mil_timestamp = 0;
 unsigned long door_timestamp = 0;
 unsigned long engine_timestamp = 0;
-const unsigned long MIN_FREQUENCY = 0; // how many milliseconds apart a message has to be from its replay
+const unsigned long MIN_FREQUENCY = 5000; // how many milliseconds apart a message has to be from its replay
 
 // For data collection - quantity of messages received
 unsigned long numReceived = 0;
@@ -126,7 +127,7 @@ void loop()
 
         // Authenticate the message
         unsigned long start = micros();
-        ClearCANBuffer();
+//        ClearCANBuffer();
         if (SHOULD_AUTHENTICATE)
         {
             if (Authenticate())
@@ -181,8 +182,10 @@ void loop()
 
 bool ClearCANBuffer()
 {
-    if (SHOULD_AUTHENTICATE)
-      return Authenticate();
+    id = CAN.getCanId(); 
+    CAN.readMsgBufID(&id, &dlc, data);
+    CAN.readMsgBufID(&id, &dlc, data);
+    CAN.readMsgBufID(&id, &dlc, data);
     return true;
 }
 
@@ -220,12 +223,17 @@ int GetKeyLen()
     }
 }
 
-bool CompareAuthMessage(uint8_t recvd[], int msgLen=0, int hashOffset=0)
+bool CompareAuthMessage(uint8_t recvd[], int msgLen=0, int hashOffset=0, int msgOffset=0)
 {
     for(int i = 0; i < msgLen; i++)
     {
-        if (recvd[i] != hash[i+hashOffset])
+        if (recvd[i+msgOffset] != hash[i+hashOffset])
+        {
+            Serial.print(recvd[i+msgOffset], HEX);
+            Serial.print(" != ");
+            Serial.println(hash[i+hashOffset], HEX);
             return false;
+        }
     }
     return true;
 }
@@ -247,13 +255,6 @@ bool Authenticate()
     }
     message.toLowerCase();
 
-    Sha1.initHmac(key, keyLen);
-    WriteBytes((const uint8_t *)message.c_str(), message.length());
-    uint8_t *correct_hash;
-    hash = Sha1.resultHmac();
-//    Serial.print("Expected Digest: ");
-//    PrintHash(hash);
-
     // For storing incoming digest
     uint8_t msg1[8] = {0};
     uint8_t msg2[8] = {0};
@@ -262,20 +263,47 @@ bool Authenticate()
     uint8_t len;
 
     // Read in the three sections of the digest and check them
+    while (CAN_MSGAVAIL != CAN.checkReceive())
+        continue;
     CAN.readMsgBuf(&len, msg1);
-    //PrintMessage(id, len, &msg1[0]);
-    if (!CompareAuthMessage(msg1, 8, 0)) return false;
+    // store timestamp
+    ts = (unsigned long)(msg1[0] << 24);
+    ts += (unsigned long)(msg1[1] << 16);
+    ts += (unsigned long)(msg1[2] << 8);
+    ts += (unsigned long)(msg1[3]);
+
+    Sha1.initHmac(key, keyLen);
+    WriteBytes((const uint8_t *)message.c_str(), message.length());
+    Sha1.write(msg1[0]); // include the timestamp in the hash
+    Sha1.write(msg1[1]);
+    Sha1.write(msg1[2]);
+    Sha1.write(msg1[3]);
+    Serial.print("Timestamp used in hash: ");
+    Serial.println(ts);
+    uint8_t *correct_hash;
+    hash = Sha1.resultHmac();
+//    Serial.print("Expected Digest: ");
+//    PrintHash(hash);
+
+
+//    Serial.println("Running Comparisons now...");
+//    PrintMessage(id, len, &msg1[0]);
+    if (!CompareAuthMessage(msg1, 4, 0, 4)) return false;
     
-    CAN.readMsgBuf(&len, msg3);
-    //PrintMessage(id, len, &msg3[0]);
-    if (!CompareAuthMessage(msg3, 4, 16)) return false;
-    
+    while (CAN_MSGAVAIL != CAN.checkReceive())
+        continue;
     CAN.readMsgBuf(&len, msg2);
-    //PrintMessage(id, len, &msg2[0]);
-    if (!CompareAuthMessage(msg2, 8, 8)) return false;
+//    PrintMessage(id, len, &msg2[0]);
+    if (!CompareAuthMessage(msg2, 8, 4)) return false;
+    
+    while (CAN_MSGAVAIL != CAN.checkReceive())
+        continue;
+    CAN.readMsgBuf(&len, msg3);
+//    PrintMessage(id, len, &msg3[0]);
+    if (!CompareAuthMessage(msg3, 8, 12)) return false;
 
     // Verify the timestamp/frequency
-    if (!VerifyTimestamp(&msg3[4]))
+    if (!VerifyTimestamp(&msg1[0]))
     {
         if (SHOW_NORMAL_OUTPUT)
             Serial.println("Failed Frequency Check");

@@ -216,10 +216,8 @@ void PrintMessage(uint32_t id, uint8_t dlc, uint8_t *stmp)
 //----------------------------------------------------------------------------
 // Fill the next four bytes of a buffer with the current timestamp
 //----------------------------------------------------------------------------
-void StampTime(uint8_t *buf)
+void StampTime(uint8_t *buf, unsigned long ms)
 {
-    unsigned long ms = millis(); 
-
     // Store the timestamp
     buf[0] = (int)((ms >> 24) & 0xFF);
     buf[1] = (int)((ms >> 16) & 0xFF);
@@ -254,26 +252,33 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     // Serial output for convenience
     Serial.print("Hashing: ");
     Serial.println(message);
-    Serial.print("Key: ");
+    Serial.print("Key Used: ");
     Serial.println((const char *)theKey);
-
-    // Initialize the HMAC, write the string data, and create the HMAC
-    Sha1.initHmac(theKey, keyLen);
-    WriteBytes((const uint8_t *)message.c_str(), message.length());
-    hash = Sha1.resultHmac();
 
     // Create the 3 auth messages
     uint8_t msg1[8];
     uint8_t msg2[8];
     uint8_t msg3[8];
 
-    // Store the hash in the 3 auth messages
-    for(int i = 0; i < 8; i++) msg1[i] = hash[i];
-    for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
-    for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
+    unsigned long ms = millis(); 
 
-    // Fill msg3 last 4 bytes with timestamp
-    StampTime(&msg3[4]);
+    // Fill msg1 first 4 bytes with timestamp
+    StampTime(&msg1[0], ms);
+
+    // Initialize the HMAC, write the string data, and create the HMAC
+    Sha1.initHmac(theKey, keyLen);
+    WriteBytes((const uint8_t *)message.c_str(), message.length()); // hash the message
+    Sha1.write(msg1[0]); // include the timestamp in the hash
+    Sha1.write(msg1[1]);
+    Sha1.write(msg1[2]);
+    Sha1.write(msg1[3]);
+    Serial << "Timestamp used in hash: " << ms << "\n";
+    hash = Sha1.resultHmac();
+
+    // Store the hash in the 3 auth messages
+    for(int i = 4; i < 8; i++) msg1[i] = hash[i-4];
+    for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i-4];
+    for(int i = 16; i < 24; i++) msg3[i - 16] = hash[i-4];
 
     // Send the auth messages
     CAN.sendMsgBuf(id, 0, 8, msg1);
@@ -314,23 +319,29 @@ void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
     Serial.print("Key: ");
     Serial.println((const char *)theKey);
 
-    // Create the HMAC
-    Sha1.initHmac(theKey, keyLen);
-    WriteBytes((const uint8_t *)message.c_str(), message.length());
-    hash = Sha1.resultHmac();
-
     // Create the 3 auth messages
     uint8_t msg1[8];
     uint8_t msg2[8];
     uint8_t msg3[8];
 
-    // Fill the 3 auth messages with the hash
-    for(int i = 0; i < 8; i++) msg1[i] = hash[i];
-    for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i];
-    for(int i = 16; i < 20; i++) msg3[i - 16] = hash[i];
+    unsigned long ms = millis(); 
 
-    // Fill msg3 last 4 bytes with timestamp
-    StampTime(&msg3[4]);
+    // Fill msg1 first 4 bytes with timestamp
+    StampTime(&msg1[0], ms);
+
+    // Create the HMAC
+    Sha1.initHmac(theKey, keyLen);
+    WriteBytes((const uint8_t *)message.c_str(), message.length());
+    Sha1.write(msg1[0]); // include the timestamp in the hash
+    Sha1.write(msg1[1]);
+    Sha1.write(msg1[2]);
+    Sha1.write(msg1[3]);
+    hash = Sha1.resultHmac();
+
+    // Fill the 3 auth messages with the hash
+    for(int i = 4; i < 8; i++) msg1[i] = hash[i-4];
+    for(int i = 8; i < 16; i++) msg2[i - 8] = hash[i-4];
+    for(int i = 16; i < 24; i++) msg3[i - 16] = hash[i-4];
 
     // Send the auth messages
     CAN.sendMsgBuf(id, 0, 8, msg1);

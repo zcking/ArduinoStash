@@ -86,7 +86,9 @@ void loop()
         // Get the sections of the message and the key as strings
         String sid = Serial.readStringUntil('#');
         String message = Serial.readStringUntil(' ');
-        String skey = Serial.readString();
+        String skey;
+        if (SHOULD_AUTHENTICATE)
+          skey = Serial.readString();
   
         // Parse and convert them appropriately
         uint32_t id = 0;
@@ -106,7 +108,14 @@ void loop()
         // authentication messages
         CAN.sendMsgBuf(id, 0, dlc, data);
         if (SHOULD_AUTHENTICATE)
-          SendAuthMessagesByKey(id, dlc, data, skey);
+            SendAuthMessagesByKey(id, dlc, data, skey);
+        
+        if (id == TOGGLE_AUTH_ID)
+            if (SHOULD_AUTHENTICATE && skey == "auth key")
+                SHOULD_AUTHENTICATE = !SHOULD_AUTHENTICATE;
+            else if (!SHOULD_AUTHENTICATE)
+                SHOULD_AUTHENTICATE = !SHOULD_AUTHENTICATE;
+                
 
         // Print the original message to serial interface
         PrintMessage(id, dlc, &data[0]);

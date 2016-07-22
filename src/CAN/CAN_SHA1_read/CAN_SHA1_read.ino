@@ -179,10 +179,11 @@ void loop()
 }
 
 
-void ClearCANBuffer()
+bool ClearCANBuffer()
 {
     if (SHOULD_AUTHENTICATE)
-      Authenticate();
+      return Authenticate();
+    return true;
 }
 
 const uint8_t * GetKey()

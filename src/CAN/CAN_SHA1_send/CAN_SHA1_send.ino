@@ -272,7 +272,7 @@ void SendAuthMessages(uint32_t id, uint8_t dlc, uint8_t *buf)
     Sha1.write(msg1[1]);
     Sha1.write(msg1[2]);
     Sha1.write(msg1[3]);
-    Serial << "Timestamp used in hash: " << ms << "\n";
+//    Serial << "Timestamp used in hash: " << ms << "\n";
     hash = Sha1.resultHmac();
 
     // Store the hash in the 3 auth messages
@@ -314,8 +314,8 @@ void SendAuthMessagesByKey(uint32_t id, uint8_t dlc, uint8_t *buf, String sKey)
     message.toLowerCase(); // for consistency
 
     // Serial output
-    Serial.print("Hashing: ");
-    Serial.println(message);
+//    Serial.print("Hashing: ");
+//    Serial.println(message);
     Serial.print("Key: ");
     Serial.println((const char *)theKey);
 

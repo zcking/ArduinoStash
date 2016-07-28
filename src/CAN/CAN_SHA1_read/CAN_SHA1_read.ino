@@ -278,8 +278,8 @@ bool Authenticate()
     Sha1.write(msg1[1]);
     Sha1.write(msg1[2]);
     Sha1.write(msg1[3]);
-    Serial.print("Timestamp used in hash: ");
-    Serial.println(ts);
+//    Serial.print("Timestamp used in hash: ");
+//    Serial.println(ts);
     uint8_t *correct_hash;
     hash = Sha1.resultHmac();
 //    Serial.print("Expected Digest: ");
